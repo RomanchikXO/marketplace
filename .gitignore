@@ -32,3 +32,4 @@ build/
 .env.local
 
 .idea
+/backend/logger/migrations/
