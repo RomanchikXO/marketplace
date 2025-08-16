@@ -1,11 +1,11 @@
 // marketplace/frontend/src/components/Login.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import './Auth.css';
+import { useNavigate } from 'react-router-dom';
 
 // Типы для пропсов
 interface LoginProps {
   onLogin: (userData: any) => void;
-  switchToRegister: () => void;
 }
 
 // Типы для формы
@@ -14,7 +14,8 @@ interface LoginFormData {
   password: string;
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin, switchToRegister }) => {
+const Login: React.FC<LoginProps> = ({ onLogin }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<LoginFormData>({
     nickname: '',
     password: ''
@@ -27,8 +28,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, switchToRegister }) => {
   useEffect(() => {
     console.log('Login компонент монтирован');
     console.log('onLogin:', typeof onLogin, onLogin);
-    console.log('switchToRegister:', typeof switchToRegister, switchToRegister);
-  }, [onLogin, switchToRegister]);
+  }, [onLogin]);
 
   // Падающие цифры
   useEffect(() => {
@@ -137,20 +137,8 @@ const Login: React.FC<LoginProps> = ({ onLogin, switchToRegister }) => {
     }
   };
 
-  const handleSwitchToRegister = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('=== КНОПКА ЗАРЕГИСТРИРОВАТЬСЯ НАЖАТА ===');
-    console.log('switchToRegister тип:', typeof switchToRegister);
-    console.log('switchToRegister значение:', switchToRegister);
-
-    if (typeof switchToRegister === 'function') {
-      console.log('Вызываем switchToRegister');
-      switchToRegister();
-    } else {
-      console.error('switchToRegister не является функцией:', switchToRegister);
-      alert('Ошибка: функция переключения не определена');
-    }
+  const handleSwitchToRegister = () => {
+    navigate('/register');
   };
 
   return (

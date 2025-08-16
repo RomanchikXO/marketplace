@@ -1,5 +1,6 @@
-// frontend/src/components/Dashboard.tsx
-import React, { useEffect, useRef, useState } from 'react';
+// marketplace/frontend/src/components/Dashboard.tsx
+import React, { useEffect, useRef } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Repricer, Analytics, Sorter } from './modules';
 import './Dashboard.css';
 
@@ -22,10 +23,12 @@ interface ModuleCard {
   description: string;
   icon: string;
   color: string;
+  path: string;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
-  const [activeModule, setActiveModule] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const modules: ModuleCard[] = [
@@ -34,23 +37,29 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       title: 'Репрайсер',
       description: 'Автоматическое управление ценами',
       icon: '💰',
-      color: '#00ff41'
+      color: '#00ff41',
+      path: '/dashboard/repricer'
     },
     {
-      id: 'dashboard',
+      id: 'analytics',
       title: 'Дашборд',
       description: 'Аналитика и отчеты',
       icon: '📊',
-      color: '#0099ff'
+      color: '#0099ff',
+      path: '/dashboard/analytics'
     },
     {
       id: 'sorter',
       title: 'Подсортировщик',
       description: 'Управление ассортиментом',
       icon: '📦',
-      color: '#ff6600'
+      color: '#ff6600',
+      path: '/dashboard/sorter'
     }
   ];
+
+  const isHomePage = location.pathname === '/dashboard' || location.pathname === '/dashboard/';
+  const currentModule = modules.find(m => location.pathname.startsWith(m.path));
 
   // Матричный фон
   useEffect(() => {
@@ -98,25 +107,17 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     };
   }, []);
 
-  const handleModuleClick = (moduleId: string) => {
-    setActiveModule(moduleId);
+  const handleModuleClick = (path: string) => {
+    navigate(path);
   };
 
   const handleBackToHome = () => {
-    setActiveModule(null);
+    navigate('/dashboard');
   };
 
-  const renderModuleContent = (moduleId: string) => {
-    switch (moduleId) {
-      case 'repricer':
-        return <Repricer />;
-      case 'dashboard':
-        return <Analytics />;
-      case 'sorter':
-        return <Sorter />;
-      default:
-        return null;
-    }
+  const handleLogout = () => {
+    onLogout();
+    navigate('/login');
   };
 
   return (
@@ -124,7 +125,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       <canvas ref={canvasRef} className="matrix-bg"></canvas>
 
       {/* Боковая панель (показывается только когда выбран модуль) */}
-      {activeModule && (
+      {!isHomePage && (
         <div className="sidebar">
           <div className="sidebar-header">
             <button className="back-btn" onClick={handleBackToHome}>
@@ -135,8 +136,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             {modules.map(module => (
               <button
                 key={module.id}
-                className={`nav-item ${activeModule === module.id ? 'active' : ''}`}
-                onClick={() => handleModuleClick(module.id)}
+                className={`nav-item ${currentModule?.id === module.id ? 'active' : ''}`}
+                onClick={() => handleModuleClick(module.path)}
                 style={{ borderLeft: `3px solid ${module.color}` }}
               >
                 <span className="nav-icon">{module.icon}</span>
@@ -148,7 +149,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             <div className="user-info">
               <span>👤 {user.nickname || 'Пользователь'}</span>
             </div>
-            <button className="logout-btn" onClick={onLogout}>
+            <button className="logout-btn" onClick={handleLogout}>
               Выйти
             </button>
           </div>
@@ -156,47 +157,54 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       )}
 
       {/* Основной контент */}
-      <div className={`main-content ${activeModule ? 'with-sidebar' : ''}`}>
-        {!activeModule ? (
-          // Главная страница с карточками
-          <div className="home-view">
-            <header className="dashboard-header">
-              <h1 className="welcome-title">
-                Добро пожаловать, {user.nickname || 'Пользователь'}!
-              </h1>
-              <button className="logout-btn-header" onClick={onLogout}>
-                Выйти
-              </button>
-            </header>
+      <div className={`main-content ${!isHomePage ? 'with-sidebar' : ''}`}>
+        <Routes>
+          {/* Главная страница дашборда */}
+          <Route
+            path="/"
+            element={
+              <div className="home-view">
+                <header className="dashboard-header">
+                  <h1 className="welcome-title">
+                    Добро пожаловать, {user.nickname || 'Пользователь'}!
+                  </h1>
+                  <button className="logout-btn-header" onClick={handleLogout}>
+                    Выйти
+                  </button>
+                </header>
 
-            <div className="modules-grid">
-              {modules.map(module => (
-                <div
-                  key={module.id}
-                  className="module-card"
-                  onClick={() => handleModuleClick(module.id)}
-                  style={{
-                    borderColor: module.color,
-                    boxShadow: `0 0 20px ${module.color}33`
-                  }}
-                >
-                  <div className="module-icon" style={{ color: module.color }}>
-                    {module.icon}
-                  </div>
-                  <h3 className="module-title">{module.title}</h3>
-                  <p className="module-description">{module.description}</p>
-                  <div
-                    className="module-glow"
-                    style={{ background: `${module.color}11` }}
-                  ></div>
+                <div className="modules-grid">
+                  {modules.map(module => (
+                    <div
+                      key={module.id}
+                      className="module-card"
+                      onClick={() => handleModuleClick(module.path)}
+                      style={{
+                        borderColor: module.color,
+                        boxShadow: `0 0 20px ${module.color}33`
+                      }}
+                    >
+                      <div className="module-icon" style={{ color: module.color }}>
+                        {module.icon}
+                      </div>
+                      <h3 className="module-title">{module.title}</h3>
+                      <p className="module-description">{module.description}</p>
+                      <div
+                        className="module-glow"
+                        style={{ background: `${module.color}11` }}
+                      ></div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          // Страница выбранного модуля
-          renderModuleContent(activeModule)
-        )}
+              </div>
+            }
+          />
+
+          {/* Маршруты модулей */}
+          <Route path="/repricer" element={<Repricer />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/sorter" element={<Sorter />} />
+        </Routes>
       </div>
     </div>
   );
