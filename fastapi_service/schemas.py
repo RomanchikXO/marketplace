@@ -31,3 +31,9 @@ class UserResponse(BaseModel):
 class UserLoginResponse(BaseModel):
     user: UserResponse
     message: str
+
+
+class UserRegisterResponse(BaseModel):
+    user: UserResponse
+    message: str
+    activation_required: bool

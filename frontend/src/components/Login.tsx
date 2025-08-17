@@ -84,12 +84,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log('=== ФОРМА ВХОДА ОТПРАВЛЕНА ===');
 
     // Проверяем, что обязательные поля заполнены
     if (!formData.nickname.trim() || !formData.password.trim()) {
       setError('Пожалуйста, заполните все поля');
-      console.log('Ошибка валидации: не все поля заполнены');
       return;
     }
 
@@ -97,8 +95,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setError('');
 
     try {
-      console.log('Отправляем данные для входа:', formData);
-
       // Используем относительный URL для API запросов
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -110,40 +106,31 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         body: JSON.stringify(formData)
       });
 
-      console.log('Ответ сервера - статус:', response.status);
-
       if (response.ok) {
         const data = await response.json();
-        console.log('Ответ сервера - данные:', data);
-        console.log('Вход успешен');
         
         if (typeof onLogin === 'function') {
-          console.log('Вызываем onLogin с данными:', data.user || data);
           onLogin(data.user || data);
-        } else {
-          console.error('onLogin не является функцией:', onLogin);
-          setError('Ошибка: функция входа не определена');
         }
       } else {
         let errorMsg = 'Ошибка входа';
         try {
           const errorData = await response.json();
           errorMsg = errorData.detail || errorData.message || errorMsg;
+
+          if (response.status === 403 && errorMsg.includes('не активирован')) {
+            setError('⚠️ ' + errorMsg);
+          } else {
+            setError(errorMsg);
+          }
         } catch {
           errorMsg = `Ошибка сервера: ${response.status}`;
+          setError(errorMsg);
         }
-        console.log('Ошибка от сервера:', errorMsg);
-        setError(errorMsg);
       }
     } catch (err: any) {
       console.error('Ошибка сети при входе:', err);
-      
-      // Более детальная обработка ошибок
-      if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
-        setError('Не удается подключиться к серверу. Проверьте интернет-соединение.');
-      } else {
-        setError('Ошибка соединения с сервером: ' + err.message);
-      }
+      setError('Ошибка соединения с сервером: ' + err.message);
     } finally {
       setLoading(false);
     }

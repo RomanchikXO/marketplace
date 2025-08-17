@@ -43,7 +43,6 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log('=== ФОРМА ОТПРАВЛЕНА ===');
 
     // Проверяем, что обязательные поля заполнены
     if (!formData.nickname.trim() || !formData.email.trim() || !formData.password.trim()) {
@@ -56,7 +55,6 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
     setError('');
 
     try {
-      console.log('Отправляем данные на сервер:', formData);
 
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -67,20 +65,23 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
         body: JSON.stringify(formData)
       });
 
-      console.log('Ответ сервера - статус:', response.status);
-
       const data = await response.json();
-      console.log('Ответ сервера - данные:', data);
 
       if (response.ok) {
         console.log('Регистрация успешна');
-        if (typeof onRegister === 'function') {
-          console.log('Вызываем onRegister с данными:', data);
-          onRegister(data);
+
+        if (data.activation_required) {
+          setError('');
+          alert(`✅ Регистрация успешна!\n\n${data.message}\n\nВы сможете войти в систему после активации аккаунта администратором.`);
+          navigate('/login');
         } else {
-          console.error('onRegister не является функцией:', onRegister);
-          setError('Ошибка: функция регистрации не определена');
+          // Если по каким-то причинам аккаунт сразу активен
+          if (typeof onRegister === 'function') {
+            console.log('Вызываем onRegister с данными:', data);
+            onRegister(data);
+          }
         }
+
       } else {
         const errorMsg = data.detail || data.message || 'Ошибка регистрации';
         console.log('Ошибка от сервера:', errorMsg);

@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import get_db, create_tables
 from models import User
-from schemas import UserRegister, UserLogin, UserResponse, UserLoginResponse
+from schemas import UserRegister, UserLogin, UserLoginResponse, UserRegisterResponse
 
 app = FastAPI(title="Marketplace API")
 
@@ -22,7 +22,7 @@ async def startup_event():
     create_tables()
 
 
-@app.post("/auth/register", response_model=UserResponse)
+@app.post("/auth/register", response_model=UserRegisterResponse)
 async def register(user_data: UserRegister, db: Session = Depends(get_db)):
     # Проверяем уникальность никнейма
     if db.query(User).filter(User.nickname == user_data.nickname).first():
@@ -44,14 +44,19 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
         nickname=user_data.nickname,
         email=user_data.email,
         phone=user_data.phone,
-        hashed_password=hashed_password
+        hashed_password=hashed_password,
+        is_active = False
     )
 
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
 
-    return db_user
+    return UserRegisterResponse(
+        user=db_user,
+        message="Регистрация успешна! Аккаунт будет активирован администратором.",
+        activation_required=True
+    )
 
 
 @app.post("/auth/login", response_model=UserLoginResponse)
@@ -68,7 +73,7 @@ async def login(user_data: UserLogin, db: Session = Depends(get_db)):
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Аккаунт деактивирован"
+            detail="Аккаунт не активирован. Обратитесь к администратору для активации."
         )
 
     return UserLoginResponse(
