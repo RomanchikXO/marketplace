@@ -1,4 +1,3 @@
-// marketplace/frontend/src/components/Login.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import './Auth.css';
 import { useNavigate } from 'react-router-dom';
@@ -100,7 +99,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     try {
       console.log('Отправляем данные для входа:', formData);
 
-      const response = await fetch('http://localhost:8001/auth/login', {
+      // Используем относительный URL для API запросов
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -112,11 +112,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
       console.log('Ответ сервера - статус:', response.status);
 
-      const data = await response.json();
-      console.log('Ответ сервера - данные:', data);
-
       if (response.ok) {
+        const data = await response.json();
+        console.log('Ответ сервера - данные:', data);
         console.log('Вход успешен');
+        
         if (typeof onLogin === 'function') {
           console.log('Вызываем onLogin с данными:', data.user || data);
           onLogin(data.user || data);
@@ -125,13 +125,25 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           setError('Ошибка: функция входа не определена');
         }
       } else {
-        const errorMsg = data.detail || data.message || 'Ошибка входа';
+        let errorMsg = 'Ошибка входа';
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.detail || errorData.message || errorMsg;
+        } catch {
+          errorMsg = `Ошибка сервера: ${response.status}`;
+        }
         console.log('Ошибка от сервера:', errorMsg);
         setError(errorMsg);
       }
     } catch (err: any) {
       console.error('Ошибка сети при входе:', err);
-      setError('Ошибка соединения с сервером: ' + err.message);
+      
+      // Более детальная обработка ошибок
+      if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
+        setError('Не удается подключиться к серверу. Проверьте интернет-соединение.');
+      } else {
+        setError('Ошибка соединения с сервером: ' + err.message);
+      }
     } finally {
       setLoading(false);
     }

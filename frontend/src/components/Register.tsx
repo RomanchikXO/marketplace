@@ -58,7 +58,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
     try {
       console.log('Отправляем данные на сервер:', formData);
 
-      const response = await fetch('http://localhost:8001/auth/register', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

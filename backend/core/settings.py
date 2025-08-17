@@ -25,9 +25,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-0*d6+!*$jyyf!6dee*n-u)&q47_@plaq$sn0^u1%(z$4)gj22%'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
 
-ALLOWED_HOSTS = []
+
+ALLOWED_HOSTS = ['wbautopro.ru', 'www.wbautopro.ru', 'localhost', '127.0.0.1', 'django'] if not DEBUG else []
 
 
 # Application definition
@@ -129,7 +130,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 # Static files settings
-STATIC_URL = '/static/'
+STATIC_URL = '/django-static/' if not DEBUG else '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Для development
@@ -138,16 +139,35 @@ STATICFILES_DIRS = [
 ] if os.path.exists(os.path.join(BASE_DIR, 'static')) else []
 
 # Для обслуживания статики в development через Django
-if DEBUG:
-    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
+
+if DEBUG:
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+else:
+    CORS_ALLOWED_ORIGINS = [
+        "https://wbautopro.ru",
+        "https://www.wbautopro.ru",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+
+    CORS_ALLOW_CREDENTIALS = True
+
+    # Security settings для production
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = False  # nginx уже делает редирект
+    USE_TZ = True

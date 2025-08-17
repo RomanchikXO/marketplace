@@ -33,3 +33,9 @@ build/
 
 .idea
 /backend/logger/migrations/
+
+/certbot
+nginx/nginx.conf
+docker-compose.yml
+**/Dockerfile
+frontend/package-lock.json
