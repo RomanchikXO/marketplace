@@ -24,3 +24,9 @@ marketplace/
 docker compose down
 docker compose build django
 docker compose up -d
+
+
+Подключиться к БД
+docker exec -it marketplace-postgres-1 psql -U postgres
+\l
+\c marketplace

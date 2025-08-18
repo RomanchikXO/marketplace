@@ -420,3 +420,51 @@ async def get_nmids():
                 else:
                     param["updatedAt"] = response["cursor"]["updatedAt"]
                     param["nmID"] = response["cursor"]["nmID"]
+
+
+async def get_stocks_data_2_weeks():
+    cabinets = await get_data_from_db("wb_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
+
+    for cab in cabinets:
+        async with aiohttp.ClientSession() as session:
+            param = {
+                "type": "get_stocks_data",
+                "API_KEY": cab["token"],
+                "dateFrom": str(datetime.now() + timedelta(hours=3) - timedelta(days=1)), #вчерашний день с текущим временем
+            }
+            response = await wb_api(session, param)
+
+            conn = await async_connect_to_database()
+            if not conn:
+                logger.error("Ошибка подключения к БД")
+                raise
+            try:
+                for quant in response:
+                    await add_set_data_from_db(
+                        conn=conn,
+                        table_name="wb_stocks",
+                        data=dict(
+                            lk_id=cab["id"],
+                            lastchangedate=parse_datetime(quant["lastChangeDate"]),
+                            warehousename=quant["warehouseName"],
+                            supplierarticle=quant["supplierArticle"],
+                            nmid=quant["nmId"],
+                            barcode=int(quant["barcode"]) if quant.get("barcode") else None,
+                            quantity=quant["quantity"],
+                            inwaytoclient=quant["inWayToClient"],
+                            inwayfromclient=quant["inWayFromClient"],
+                            quantityfull=quant["quantityFull"],
+                            category=quant["category"],
+                            techsize=quant["techSize"],
+                            issupply=quant["isSupply"],
+                            isrealization=quant["isRealization"],
+                            sccode=quant["SCCode"],
+                            added_db=datetime.now() + timedelta(hours=3)
+
+                        ),
+                        conflict_fields=['nmid', 'lk_id', 'supplierarticle', 'warehousename']
+                    )
+            except Exception as e:
+                logger.error(f"Ошибка при добавлении остатков в БД. Error: {e}")
+            finally:
+                await conn.close()

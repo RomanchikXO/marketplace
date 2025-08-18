@@ -4,7 +4,7 @@ from context_logger import ContextLogger
 import logging
 from celery import shared_task
 from decorators import with_task_context
-from parsers.wildberies import get_orders, get_nmids
+from parsers.wildberies import get_orders, get_nmids, get_stocks_data_2_weeks
 import asyncio
 
 logger = ContextLogger(logging.getLogger("logger"))
@@ -30,3 +30,11 @@ def get_orders_to_db():
     logger.info("🟢 Обновляем заказы в DB")
     asyncio.run(get_orders())
     logger.info("Заказы в DB обновлены")
+
+
+@shared_task
+@with_task_context("get_stocks_to_db")
+def get_stocks_to_db():
+    logger.info("🟢 Обновляем остатки в DB")
+    asyncio.run(get_stocks_data_2_weeks())
+    logger.info("Остатки в DB обновлены")
