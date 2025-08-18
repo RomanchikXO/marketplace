@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Groups, WbLk, nmids, Stocks
+from .models import Groups, WbLk, nmids, Stocks, Orders
 
 
 @admin.register(Groups)
@@ -35,3 +35,15 @@ class StocksAdmin(admin.ModelAdmin):
     list_filter = ('warehousename', 'issupply', 'isrealization')
     search_fields = ('supplierarticle', 'barcode', 'nmid')
     ordering = ('-lastchangedate',)
+
+
+@admin.register(Orders)
+class OrdersAdmin(admin.ModelAdmin):
+    list_display = (
+        'date', 'lastchangedate', 'supplierarticle',
+        'nmid', 'barcode', 'warehousename', 'countryname',
+        'brand', 'totalprice', 'finishedprice', 'iscancel'
+    )
+    list_filter = ('lk', 'iscancel', 'warehousename', 'brand', 'countryname', 'isrealization', 'issupply')
+    search_fields = ('supplierarticle', 'nmid', 'barcode', 'gnumber', 'srid')
+    ordering = ('-date',)

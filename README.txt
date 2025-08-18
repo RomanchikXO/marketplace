@@ -18,3 +18,9 @@ marketplace/
 ├── docker-compose.yml
 ├── .env
 └── .gitignore
+
+
+Если поменяли в DJANGO
+docker compose down
+docker compose build django
+docker compose up -d
