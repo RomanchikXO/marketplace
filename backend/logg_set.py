@@ -30,5 +30,10 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
+        'parsers': {
+            'handlers': ['db'],
+            'level': 'INFO',
+            'propagate': True,
+        },
     },
 }
