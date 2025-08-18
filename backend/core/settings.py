@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'api',
     'django_celery_beat',
+    'wb.apps.WbConfig'
 ]
 
 MIDDLEWARE = [
