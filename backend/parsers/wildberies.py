@@ -304,7 +304,7 @@ async def wb_api(session, param):
 
 
 async def get_orders():
-    cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
+    cabinets = await get_data_from_db("wb_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
     for cab in cabinets:
         async with aiohttp.ClientSession() as session:
             date_from = (datetime.now() + timedelta(hours=3) - timedelta(days=14)).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -323,7 +323,7 @@ async def get_orders():
                 for order in response:
                     await add_set_data_from_db(
                         conn=conn,
-                        table_name="myapp_orders",
+                        table_name="wb_orders",
                         data=dict(
                             lk_id=cab["id"],
                             date=parse_datetime(order["date"]),
@@ -364,7 +364,7 @@ async def get_orders():
 
 async def get_nmids():
     # получаем все карточки товаров
-    cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
+    cabinets = await get_data_from_db("wb_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
 
     for cab in cabinets:
         async with aiohttp.ClientSession() as session:
@@ -385,7 +385,7 @@ async def get_nmids():
                     for resp in response["cards"]:
                         await add_set_data_from_db(
                             conn=conn,
-                            table_name="myapp_nmids",
+                            table_name="wb_nmids",
                             data=dict(
                                 lk_id=cab["id"],
                                 nmid=resp["nmID"],

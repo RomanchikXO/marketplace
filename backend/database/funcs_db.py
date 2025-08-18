@@ -102,7 +102,7 @@ async def add_set_data_from_db(
         if not data.get("updated_at"):
             data["updated_at"] = datetime.now()
 
-        if "is_active" not in data and table_name == "myapp_nmids":
+        if "is_active" not in data and table_name == "wb_nmids":
             data["is_active"] = True
         columns = list(data.keys())
         values = list(data.values())
