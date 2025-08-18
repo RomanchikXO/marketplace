@@ -360,3 +360,63 @@ async def get_orders():
                 logger.error(f"Ошибка при добавлении заказов в БД. Error: {e}")
             finally:
                 await conn.close()
+
+
+async def get_nmids():
+    # получаем все карточки товаров
+    cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
+
+    for cab in cabinets:
+        async with aiohttp.ClientSession() as session:
+            param = {
+                "type": "get_nmids",
+                "API_KEY": cab["token"],
+            }
+            while True:
+                response = await wb_api(session, param)
+                if not response.get("cards"):
+                    logger.error(f"Ошибка при получении артикулов: {response}")
+                    raise
+                conn = await async_connect_to_database()
+                if not conn:
+                    logger.error("Ошибка подключения к БД")
+                    raise
+                try:
+                    for resp in response["cards"]:
+                        await add_set_data_from_db(
+                            conn=conn,
+                            table_name="myapp_nmids",
+                            data=dict(
+                                lk_id=cab["id"],
+                                nmid=resp["nmID"],
+                                imtid=resp["imtID"],
+                                nmuuid=resp["nmUUID"],
+                                subjectid=resp["subjectID"],
+                                subjectname=resp["subjectName"],
+                                vendorcode=resp["vendorCode"],
+                                brand=resp["brand"],
+                                title=resp["title"],
+                                description=resp["description"],
+                                needkiz=resp["needKiz"],
+                                dimensions=json.dumps(resp["dimensions"]),
+                                characteristics=json.dumps(resp["characteristics"]),
+                                sizes=json.dumps(resp["sizes"]),
+                                tag_ids = json.dumps([]),
+                                created_at=parse_datetime(resp["createdAt"]),
+                                updated_at=parse_datetime(resp["updatedAt"]),
+                                added_db=datetime.now() + timedelta(hours=3)
+                            ),
+                            conflict_fields=["nmid", "lk_id"]
+                        )
+                except Exception as e:
+                    logger.error(f"Ошибка при добавлении артикулов в бд {e}")
+                    raise
+                finally:
+                    await conn.close()
+
+
+                if response["cursor"]["total"] < 100:
+                    break
+                else:
+                    param["updatedAt"] = response["cursor"]["updatedAt"]
+                    param["nmID"] = response["cursor"]["nmID"]
