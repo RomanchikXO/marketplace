@@ -54,3 +54,34 @@ class nmids(models.Model):
 
     def __str__(self):
         return f"{self.nmid} – {self.title} ({self.brand})"
+
+
+class Stocks(models.Model):
+    lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1)  # lk_id в бд
+    lastchangedate = models.DateTimeField() #Дата и время обновления информации в сервисе. Это поле соответствует параметру dateFrom в запросе. Если часовой пояс не указан, то берётся Московское время (UTC+3)
+    warehousename = models.CharField(max_length=255, null=True) #Название склада
+    supplierarticle = models.CharField(max_length=255) #Артикул продавца
+    nmid = models.IntegerField() #Артикул
+    barcode = models.BigIntegerField(null=True) #Баркод
+    quantity = models.IntegerField() #Количество, доступное для продажи (сколько можно добавить в корзину)
+    inwaytoclient = models.IntegerField() #В пути к клиенту
+    inwayfromclient = models.IntegerField() #В пути от клиента
+    quantityfull = models.IntegerField(default=0) #Полное (непроданное) количество, которое числится за складом (= quantity + в пути)
+    category = models.CharField(max_length=255, null=True) #Категория
+    techsize = models.CharField(max_length=255, null=True) #Размер
+    issupply = models.BooleanField(default=False) #Договор поставки (внутренние технологические данные)
+    isrealization = models.BooleanField(default=False) #Договор реализации (внутренние технологические данные)
+    sccode = models.CharField(max_length=255, null=True) #Код контракта (внутренние технологические данные)
+    added_db = models.DateTimeField(auto_now_add=True, null=True)  # по МСК время обновления в бд
+    updated_at = models.DateTimeField(auto_now_add=True, null=True) # по сути то же что и выше но в UTC
+    days_in_stock_last_3 = models.IntegerField(null=True, default=0)
+    days_in_stock_last_7 = models.IntegerField(null=True, default=0)
+    days_in_stock_last_14 = models.IntegerField(null=True, default=0)
+    days_in_stock_last_30 = models.IntegerField(null=True, default=0)
+
+    class Meta:
+        unique_together = ['nmid', 'lk', 'supplierarticle', 'warehousename']
+        verbose_name_plural = "Отстаки товаров на складах"
+
+    def __str__(self):
+        return f"{self.supplierarticle} | {self.techsize} | {self.quantity} шт."
