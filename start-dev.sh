@@ -8,7 +8,7 @@ export NODE_ENV=development
 export REACT_APP_API_URL=http://localhost/api
 
 # Запускаем сервисы
-docker-compose up --build
+docker compose up --build
 
 echo "✅ Локальная разработка запущена!"
 echo "🌐 Фронтенд: http://localhost"

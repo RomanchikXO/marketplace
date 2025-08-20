@@ -53,51 +53,51 @@ chmod +x start-prod.sh
 ./restart-frontend.sh
 
 # Остановка всех сервисов
-docker-compose down
+docker compose down
 
 # Просмотр логов
-docker-compose logs [service_name]
+docker compose logs [service_name]
 
 # Статус сервисов
-docker-compose ps
+docker compose ps
 ```
 
 ### При изменениях в коде
 
-| Что изменилось | Команда | Пояснение |
-|---|---|---|
-| **Frontend код** | `./restart-frontend.sh` | Перезапуск React с очисткой кэша |
-| **Django код** | `docker-compose restart django` | Автоперезапуск при изменениях |
-| **FastAPI код** | `docker-compose restart fastapi` | Автоперезапуск при изменениях |
-| **nginx.conf** | `docker-compose restart nginx` | Перезапуск nginx |
-| **Dockerfile** | `docker-compose up --build` | Полная пересборка |
-| **requirements.txt** | `docker-compose build django fastapi` | Пересборка backend сервисов |
-| **package.json** | `docker-compose build react` | Пересборка frontend |
+| Что изменилось | Команда                               | Пояснение |
+|---|---------------------------------------|---|
+| **Frontend код** | `./restart-frontend.sh`               | Перезапуск React с очисткой кэша |
+| **Django код** | `docker compose restart django`       | Автоперезапуск при изменениях |
+| **FastAPI код** | `docker compose restart fastapi`      | Автоперезапуск при изменениях |
+| **nginx.conf** | `docker compose restart nginx`        | Перезапуск nginx |
+| **Dockerfile** | `docker compose up --build`           | Полная пересборка |
+| **requirements.txt** | `docker compose build django fastapi` | Пересборка backend сервисов |
+| **package.json** | `docker compose build react`          | Пересборка frontend |
 
 ### Работа с базой данных
 
 ```bash
 # Создание миграций
-docker-compose exec django python manage.py makemigrations
+docker compose exec django python manage.py makemigrations
 
 # Применение миграций
-docker-compose exec django python manage.py migrate
+docker compose exec django python manage.py migrate
 
 # Сбор статических файлов
-docker-compose exec django python manage.py collectstatic --noinput
+docker compose exec django python manage.py collectstatic --noinput
 
 # Создание суперпользователя
-docker-compose exec django python manage.py createsuperuser
+docker compose exec django python manage.py createsuperuser
 
 # Подключение к БД
-docker-compose exec postgres psql -U postgres -d marketplace
+docker compose exec postgres psql -U postgres -d marketplace
 ```
 
 ### Работа с пользователями FastAPI
 
 ```bash
 # Активация пользователя через FastAPI
-docker-compose exec fastapi python -c "
+docker compose exec fastapi python -c "
 from database import SessionLocal
 from models import User
 db = SessionLocal()
@@ -116,20 +116,20 @@ finally:
 
 ```bash
 # Очистка всех данных (ОСТОРОЖНО!)
-docker-compose down -v
+docker compose down -v
 docker system prune -a
 
 # Просмотр логов конкретного сервиса
-docker-compose logs -f django
-docker-compose logs -f react
-docker-compose logs -f nginx
+docker compose logs -f django
+docker compose logs -f react
+docker compose logs -f nginx
 
 # Вход в контейнер для отладки
-docker-compose exec django bash
-docker-compose exec react sh
+docker compose exec django bash
+docker compose exec react sh
 
 # Проверка сети и портов
-docker-compose exec nginx nginx -t
+docker compose exec nginx nginx -t
 curl http://localhost/api/health
 ```
 
@@ -217,22 +217,22 @@ git checkout HEAD~1
 
 ```bash
 # Все логи
-docker-compose logs
+docker compose logs
 
 # Логи в реальном времени
-docker-compose logs -f
+docker compose logs -f
 
 # Логи конкретного сервиса
-docker-compose logs django
-docker-compose logs react
-docker-compose logs nginx
+docker compose logs django
+docker compose logs react
+docker compose logs nginx
 ```
 
 ## 🔄 Мониторинг
 
 ```bash
 # Статус всех сервисов
-docker-compose ps
+docker compose ps
 
 # Использование ресурсов
 docker stats
