@@ -36,8 +36,9 @@ build/
 
 .idea
 
+# Локальные файлы окружения
+.env.local
+.env.production
+
+# Серверные конфигурации (если они отличаются)
 /certbot
-nginx/nginx.conf
-docker-compose.yml
-**/Dockerfile
-frontend/package-lock.json

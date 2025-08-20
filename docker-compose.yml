@@ -1,0 +1,146 @@
+services:
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6380:6379"
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  django:
+    build: ./backend
+    command: >
+      sh -c "
+        python manage.py makemigrations --noinput &&
+        python manage.py migrate --noinput &&
+        python manage.py shell -c \"from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='${DJANGO_SUPERUSER_USERNAME}').exists() or User.objects.create_superuser('${DJANGO_SUPERUSER_USERNAME}', '${DJANGO_SUPERUSER_EMAIL}', '${DJANGO_SUPERUSER_PASSWORD}')\" &&
+        python manage.py runserver 0.0.0.0:8000
+      "
+    volumes:
+      - ./backend:/app
+      - django_static:/app/staticfiles
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - DJANGO_SUPERUSER_USERNAME=${DJANGO_SUPERUSER_USERNAME}
+      - DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD}
+      - DJANGO_SUPERUSER_EMAIL=${DJANGO_SUPERUSER_EMAIL}
+
+  fastapi:
+    build: ./fastapi_service
+    command: >
+      sh -c "
+        apt-get update && apt-get install -y netcat-openbsd &&
+        while ! nc -z postgres 5432; do
+          echo 'Waiting for postgres...'
+          sleep 1
+        done &&
+        echo 'PostgreSQL started' &&
+        uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+      "
+    volumes:
+      - ./fastapi_service:/app
+    ports:
+      - "8001:8001"
+    depends_on:
+      - postgres
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+
+  react:
+    build: ./frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - react_build:/app/build
+    ports:
+      - "3000:3000"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost/api}
+    command: >
+      sh -c "
+        if [ \"$$NODE_ENV\" = \"production\" ]; then
+          echo 'Building for production...' &&
+          npm run build &&
+          echo 'Copying build files to volume...' &&
+          cp -r build/* /app/build/ 2>/dev/null || mkdir -p /app/build &&
+          echo 'Production build completed!' &&
+          tail -f /dev/null
+        else
+          echo 'Starting development server...' &&
+          npm start
+        fi
+      "
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - react_build:/usr/share/nginx/html
+      - django_static:/app/staticfiles:ro
+    depends_on:
+      - django
+      - fastapi
+      - react
+
+  worker:
+    build: ./backend
+    volumes:
+      - ./backend:/app
+      - /etc/localtime:/etc/localtime:ro
+    container_name: celery_worker
+    restart: always
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+    depends_on:
+      - redis
+      - postgres
+    command: [ "celery", "-A", "core.celery_config", "worker", "--loglevel=info", "--pidfile=" ]
+
+  beat:
+    build: ./backend
+    volumes:
+      - ./backend:/app
+      - /etc/localtime:/etc/localtime:ro
+    container_name: celery_beat
+    restart: always
+    depends_on:
+      - redis
+      - postgres
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+    command: [ "celery", "-A", "core.celery_config", "beat", "--loglevel=info", "--pidfile=", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler" ]
+
+volumes:
+  postgres_data:
+  react_build:
+  django_static:
