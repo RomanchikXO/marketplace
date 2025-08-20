@@ -3,6 +3,13 @@
 
 echo "🚀 Запуск production сервера..."
 
+# Создаем production nginx конфиг с SSL
+if [ ! -f nginx/nginx-prod.conf ]; then
+    echo "⚠️  nginx-prod.conf не найден, используем nginx.conf"
+else
+    cp nginx/nginx-prod.conf nginx/nginx.conf
+fi
+
 # Устанавливаем переменные для production
 export NODE_ENV=production
 export REACT_APP_API_URL=https://wbautopro.ru/api
