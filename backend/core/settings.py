@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-0*d6+!*$jyyf!6dee*n-u)&q47_@plaq$sn0^u1%(z$4)gj22%
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
 
 
-ALLOWED_HOSTS = ['wbautopro.ru', 'www.wbautopro.ru', 'localhost', '127.0.0.1', 'django'] if not DEBUG else []
+ALLOWED_HOSTS = ['wbautopro.ru', 'www.wbautopro.ru', 'localhost', '127.0.0.1', 'django', '0.0.0.0']
 
 
 # Application definition
@@ -131,7 +131,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 # Static files settings
-STATIC_URL = '/django-static/' if not DEBUG else '/static/'
+STATIC_URL = '/django-static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Для development
@@ -140,7 +140,6 @@ STATICFILES_DIRS = [
 ] if os.path.exists(os.path.join(BASE_DIR, 'static')) else []
 
 # Для обслуживания статики в development через Django
-
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 # Default primary key field type

@@ -55,8 +55,9 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
     setError('');
 
     try {
-
-      const response = await fetch('/api/auth/register', {
+      // Используем переменную окружения для API URL
+      const apiUrl = process.env.REACT_APP_API_URL || '/api';
+      const response = await fetch(`${apiUrl}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

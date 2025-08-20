@@ -95,8 +95,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setError('');
 
     try {
-      // Используем относительный URL для API запросов
-      const response = await fetch('/api/auth/login', {
+      // Используем переменную окружения для API URL
+      const apiUrl = process.env.REACT_APP_API_URL || '/api';
+      const response = await fetch(`${apiUrl}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
