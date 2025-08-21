@@ -37,3 +37,13 @@ class UserRegisterResponse(BaseModel):
     user: UserResponse
     message: str
     activation_required: bool
+
+
+class OrdersChartData(BaseModel):
+    date: str
+    count: int
+
+
+class OrdersChartResponse(BaseModel):
+    data: list[OrdersChartData]
+    total_orders: int

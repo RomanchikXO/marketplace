@@ -11,7 +11,7 @@ export NODE_ENV=development
 export REACT_APP_API_URL=http://localhost/api
 
 # Запускаем сервисы
-docker compose down -v
+docker compose down -v certbot react redis django fastapi worker beat nginx
 docker compose up --build -d
 
 echo "✅ Локальная разработка запущена!"

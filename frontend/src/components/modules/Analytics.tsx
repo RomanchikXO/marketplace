@@ -1,5 +1,6 @@
 // frontend/src/components/modules/Analytics.tsx
 import React from 'react';
+import OrdersChart from '../OrdersChart';
 
 const Analytics: React.FC = () => {
   return (
@@ -30,10 +31,8 @@ const Analytics: React.FC = () => {
 
       <div className="charts-section-full">
         <div className="chart-card-full">
-          <h3>График продаж</h3>
-          <div className="chart-placeholder">
-            📈 Здесь будет график продаж за последние 30 дней
-          </div>
+          <h3>График заказов</h3>
+          <OrdersChart />
         </div>
       </div>
 

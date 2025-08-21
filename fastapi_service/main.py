@@ -2,9 +2,11 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+from datetime import datetime, timedelta
 from database import get_db, create_tables
-from models import User
-from schemas import UserRegister, UserLogin, UserLoginResponse, UserRegisterResponse
+from models import User, WbOrders, Base
+from schemas import UserRegister, UserLogin, UserLoginResponse, UserRegisterResponse, OrdersChartResponse, OrdersChartData
 
 app = FastAPI(title="Marketplace API")
 
@@ -80,6 +82,53 @@ async def login(user_data: UserLogin, db: Session = Depends(get_db)):
         user=user,
         message="Вход выполнен успешно"
     )
+
+
+@app.get("/analytics/orders-chart", response_model=OrdersChartResponse)
+async def get_orders_chart(db: Session = Depends(get_db)):
+    """Получить данные заказов за последние 30 дней для графика"""
+    
+    # Дата 30 дней назад
+    thirty_days_ago = datetime.now() - timedelta(days=30)
+    
+    try:
+        # Получаем количество заказов по дням за последние 30 дней
+        orders_by_date = db.query(
+            func.date(WbOrders.date).label('order_date'),
+            func.count(WbOrders.id).label('count')
+        ).filter(
+            WbOrders.date >= thirty_days_ago,
+            WbOrders.iscancel == False  # Исключаем отмененные заказы
+        ).group_by(
+            func.date(WbOrders.date)
+        ).order_by(
+            func.date(WbOrders.date)
+        ).all()
+        
+        # Преобразуем в нужный формат
+        chart_data = []
+        for row in orders_by_date:
+            chart_data.append(OrdersChartData(
+                date=row.order_date.strftime('%Y-%m-%d'),
+                count=row.count
+            ))
+        
+        # Получаем общее количество заказов за период
+        total_orders = db.query(func.count(WbOrders.id)).filter(
+            WbOrders.date >= thirty_days_ago,
+            WbOrders.iscancel == False
+        ).scalar()
+        
+        return OrdersChartResponse(
+            data=chart_data,
+            total_orders=total_orders or 0
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка получения данных заказов: {str(e)}"
+        )
 
 
 @app.get("/")
