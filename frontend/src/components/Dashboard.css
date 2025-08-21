@@ -295,6 +295,25 @@
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 }
 
+.stats-grid-compact {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-top: 40px;
+}
+
+@media (max-width: 1200px) {
+  .stats-grid-compact {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-grid-compact {
+    grid-template-columns: 1fr;
+  }
+}
+
 .tool-grid {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
@@ -338,11 +357,35 @@
   color: #00ff41aa;
 }
 
+.stat-card-compact {
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid #00ff4150;
+  border-radius: 10px;
+  padding: 15px;
+  transition: all 0.3s ease;
+}
+
+.stat-card-compact:hover {
+  border-color: #00ff41;
+  box-shadow: 0 10px 30px rgba(0, 255, 65, 0.2);
+  transform: translateY(-5px);
+}
+
+.stat-card-compact h3 {
+  font-size: 1rem;
+  margin-bottom: 8px;
+  color: #00ff41aa;
+}
+
 .stat-value {
   font-size: 2.5rem;
   font-weight: bold;
   color: #00ff41;
   text-shadow: 0 0 15px #00ff41;
+}
+
+.stat-card-compact .stat-value {
+  font-size: 1.8rem;
 }
 
 /* Кнопки функций */
@@ -388,6 +431,11 @@
   gap: 30px;
 }
 
+/* Полноширинная секция с графиками */
+.charts-section-full {
+  margin-top: 50px;
+}
+
 .chart-card {
   background: rgba(0, 0, 0, 0.8);
   border: 1px solid #00ff4150;
@@ -396,7 +444,17 @@
   min-height: 300px;
 }
 
-.chart-card h3 {
+.chart-card-full {
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid #00ff4150;
+  border-radius: 10px;
+  padding: 25px;
+  min-height: 400px;
+  width: 100%;
+}
+
+.chart-card h3,
+.chart-card-full h3 {
   color: #00ff41;
   margin-bottom: 20px;
   font-size: 1.5rem;
@@ -413,6 +471,72 @@
   color: #00ff41aa;
   font-size: 1.1rem;
   text-align: center;
+}
+
+.chart-card-full .chart-placeholder {
+  height: 300px;
+}
+
+/* Секция с таблицей аналитики */
+.analytics-table-section {
+  margin-top: 50px;
+}
+
+.table-card {
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid #00ff4150;
+  border-radius: 10px;
+  padding: 25px;
+}
+
+.table-card h3 {
+  color: #00ff41;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.analytics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Courier New', monospace;
+}
+
+.analytics-table th {
+  background: rgba(0, 255, 65, 0.1);
+  color: #00ff41;
+  padding: 15px 10px;
+  text-align: left;
+  border-bottom: 2px solid #00ff4150;
+  font-weight: bold;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.analytics-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #00ff4125;
+  color: #00ff41aa;
+  font-size: 0.9rem;
+}
+
+.analytics-table tbody tr:hover {
+  background: rgba(0, 255, 65, 0.05);
+}
+
+.analytics-table td:last-child {
+  font-weight: bold;
+}
+
+.analytics-table td[data-positive="true"] {
+  color: #00ff41;
+}
+
+.analytics-table td[data-negative="true"] {
+  color: #ff4444;
 }
 
 /* Адаптивность */
