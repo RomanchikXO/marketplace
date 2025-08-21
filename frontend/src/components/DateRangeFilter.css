@@ -1,0 +1,266 @@
+.date-range-filter {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.filter-header {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.filter-header h3 {
+  margin: 0;
+  color: #00ff41;
+  font-size: 18px;
+  font-family: 'Courier New', monospace;
+}
+
+.date-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  align-items: flex-start;
+}
+
+.date-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  position: relative;
+  width: 100%;
+}
+
+.date-input-group label {
+  color: #00ff41;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.date-input {
+  background: rgba(0, 255, 65, 0.1);
+  border: 2px solid #00ff41;
+  color: #00ff41;
+  padding: 10px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  width: fit-content;
+  min-width: 120px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.date-input:hover {
+  background: rgba(0, 255, 65, 0.2);
+  box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+}
+
+.calendar-popup {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #1a1a1a;
+  border: 2px solid #00ff41;
+  border-radius: 12px;
+  padding: 20px;
+  z-index: 1000;
+  min-width: 320px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  margin-top: 10px;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.calendar-header button {
+  background: rgba(0, 255, 65, 0.1);
+  border: 1px solid #00ff41;
+  color: #00ff41;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.calendar-header button:hover {
+  background: rgba(0, 255, 65, 0.2);
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+}
+
+.calendar-header span {
+  color: #00ff41;
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  margin-bottom: 15px;
+}
+
+.weekday {
+  text-align: center;
+  color: #00ff41;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 8px 0;
+}
+
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  margin-bottom: 20px;
+}
+
+.calendar-day {
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  color: #ffffff;
+}
+
+.calendar-day.empty {
+  cursor: default;
+}
+
+.calendar-day:hover:not(.empty):not(.disabled) {
+  background: rgba(0, 255, 65, 0.2);
+  color: #00ff41;
+}
+
+.calendar-day.selected {
+  background: #00ff41;
+  color: #000000;
+  font-weight: bold;
+}
+
+.calendar-day.in-range {
+  background: rgba(0, 255, 65, 0.3);
+  color: #00ff41;
+}
+
+.calendar-day.disabled {
+  color: #666666;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.calendar-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.apply-button,
+.cancel-button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.apply-button {
+  background: #00ff41;
+  color: #000000;
+  font-weight: bold;
+}
+
+.apply-button:hover:not(:disabled) {
+  background: #00cc33;
+  box-shadow: 0 0 15px rgba(0, 255, 65, 0.4);
+}
+
+.apply-button:disabled {
+  background: #666666;
+  color: #999999;
+  cursor: not-allowed;
+}
+
+.cancel-button {
+  background: rgba(255, 68, 68, 0.1);
+  color: #ff4444;
+  border: 1px solid #ff4444;
+}
+
+.cancel-button:hover {
+  background: rgba(255, 68, 68, 0.2);
+  box-shadow: 0 0 15px rgba(255, 68, 68, 0.3);
+}
+
+/* Анимация появления календаря */
+.calendar-popup {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .filter-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .date-inputs {
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+  }
+  
+  .date-input-group {
+    width: 100%;
+  }
+  
+  .date-input {
+    min-width: 100%;
+  }
+  
+  .calendar-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 300px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+}

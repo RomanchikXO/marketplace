@@ -35,7 +35,12 @@ interface OrdersChartResponse {
   total_orders: number;
 }
 
-const OrdersChart: React.FC = () => {
+interface OrdersChartProps {
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+const OrdersChart: React.FC<OrdersChartProps> = ({ dateFrom, dateTo }) => {
   const [chartData, setChartData] = useState<OrdersChartResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,8 +48,17 @@ const OrdersChart: React.FC = () => {
   useEffect(() => {
     const fetchOrdersData = async () => {
       try {
+        setLoading(true);
         const apiUrl = process.env.REACT_APP_API_URL || '/api';
-        const response = await fetch(`${apiUrl}/analytics/orders-chart`);
+        
+        // Формируем URL с параметрами фильтра
+        const params = new URLSearchParams();
+        if (dateFrom) params.append('date_from', dateFrom);
+        if (dateTo) params.append('date_to', dateTo);
+        
+        const fullUrl = `${apiUrl}/analytics/orders-chart?${params.toString()}`;
+        
+        const response = await fetch(fullUrl);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -60,8 +74,11 @@ const OrdersChart: React.FC = () => {
       }
     };
 
-    fetchOrdersData();
-  }, []);
+    // Проверяем, что у нас есть обе даты перед запросом
+    if (dateFrom && dateTo) {
+      fetchOrdersData();
+    }
+  }, [dateFrom, dateTo]); // Перезагружаем данные при изменении фильтров
 
   if (loading) {
     return (
@@ -120,13 +137,7 @@ const OrdersChart: React.FC = () => {
         },
       },
       title: {
-        display: true,
-        text: `Общее количество заказов: ${chartData.total_orders}`,
-        color: '#00ff41aa',
-        font: {
-          family: "'Courier New', monospace",
-          size: 14,
-        },
+        display: false,
       },
       tooltip: {
         backgroundColor: 'rgba(0, 0, 0, 0.8)',

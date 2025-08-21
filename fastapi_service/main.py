@@ -85,19 +85,42 @@ async def login(user_data: UserLogin, db: Session = Depends(get_db)):
 
 
 @app.get("/analytics/orders-chart", response_model=OrdersChartResponse)
-async def get_orders_chart(db: Session = Depends(get_db)):
-    """Получить данные заказов за последние 30 дней для графика"""
+async def get_orders_chart(
+    date_from: str = None, 
+    date_to: str = None,
+    db: Session = Depends(get_db)
+):
+    """Получить данные заказов с фильтрами по датам для графика"""
     
-    # Дата 30 дней назад
-    thirty_days_ago = datetime.now() - timedelta(days=30)
+    # Если даты не указаны, берем последние 30 дней
+    if not date_from:
+        date_from = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+    if not date_to:
+        date_to = datetime.now().strftime('%Y-%m-%d')
+    
+    # Преобразуем строки в datetime
+    try:
+        start_date = datetime.strptime(date_from, '%Y-%m-%d')
+        end_date = datetime.strptime(date_to, '%Y-%m-%d')
+        
+        # Проверяем, что дата "до" не больше текущего дня
+        if end_date > datetime.now():
+            end_date = datetime.now()
+            
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Неверный формат даты. Используйте формат YYYY-MM-DD"
+        )
     
     try:
-        # Получаем количество заказов по дням за последние 30 дней
+        # Получаем количество заказов по дням в указанном диапазоне
         orders_by_date = db.query(
             func.date(WbOrders.date).label('order_date'),
             func.count(WbOrders.id).label('count')
         ).filter(
-            WbOrders.date >= thirty_days_ago,
+            WbOrders.date >= start_date,
+            WbOrders.date <= end_date + timedelta(days=1),  # +1 день чтобы включить end_date
             WbOrders.iscancel == False  # Исключаем отмененные заказы
         ).group_by(
             func.date(WbOrders.date)
@@ -115,7 +138,8 @@ async def get_orders_chart(db: Session = Depends(get_db)):
         
         # Получаем общее количество заказов за период
         total_orders = db.query(func.count(WbOrders.id)).filter(
-            WbOrders.date >= thirty_days_ago,
+            WbOrders.date >= start_date,
+            WbOrders.date <= end_date + timedelta(days=1),
             WbOrders.iscancel == False
         ).scalar()
         

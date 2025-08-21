@@ -1,40 +1,34 @@
 // frontend/src/components/modules/Analytics.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import OrdersChart from '../OrdersChart';
+import DateRangeFilter from '../DateRangeFilter';
+import PeriodStats from '../PeriodStats';
 
 const Analytics: React.FC = () => {
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+
+  const handleDateRangeChange = (from: string, to: string) => {
+    setDateFrom(from);
+    setDateTo(to);
+  };
+
   return (
     <div className="module-content">
       <h2>📊 Дашборд</h2>
-      <div className="stats-grid-compact">
-        <div className="stat-card-compact">
-          <h3>Общие продажи</h3>
-          <div className="stat-value">₽ 1,234,567</div>
-          <div className="stat-change positive">+12.5%</div>
-        </div>
-        <div className="stat-card-compact">
-          <h3>Активные заказы</h3>
-          <div className="stat-value">156</div>
-          <div className="stat-change positive">+8</div>
-        </div>
-        <div className="stat-card-compact">
-          <h3>Конверсия</h3>
-          <div className="stat-value">12.4%</div>
-          <div className="stat-change positive">+1.2%</div>
-        </div>
-        <div className="stat-card-compact">
-          <h3>Товары в наличии</h3>
-          <div className="stat-value">2,439</div>
-          <div className="stat-change negative">-23</div>
-        </div>
-      </div>
+      
+      {/* Динамическая статистика по периодам */}
+      <PeriodStats dateFrom={dateFrom} dateTo={dateTo} />
 
       <div className="charts-section-full">
         <div className="chart-card-full">
           <h3>График заказов</h3>
-          <OrdersChart />
+          <OrdersChart dateFrom={dateFrom} dateTo={dateTo} />
         </div>
       </div>
+
+      {/* Блок фильтров над таблицей */}
+      <DateRangeFilter onDateRangeChange={handleDateRangeChange} />
 
       <div className="analytics-table-section">
         <div className="table-card">
