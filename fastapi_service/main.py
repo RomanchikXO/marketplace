@@ -121,7 +121,6 @@ async def get_orders_chart(
         ).filter(
             WbOrders.date >= start_date,
             WbOrders.date <= end_date + timedelta(days=1),  # +1 день чтобы включить end_date
-            WbOrders.iscancel == False  # Исключаем отмененные заказы
         ).group_by(
             func.date(WbOrders.date)
         ).order_by(
@@ -140,7 +139,6 @@ async def get_orders_chart(
         total_orders = db.query(func.count(WbOrders.id)).filter(
             WbOrders.date >= start_date,
             WbOrders.date <= end_date + timedelta(days=1),
-            WbOrders.iscancel == False
         ).scalar()
         
         return OrdersChartResponse(
