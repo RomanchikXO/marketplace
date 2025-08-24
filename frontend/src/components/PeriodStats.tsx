@@ -8,6 +8,7 @@ interface OrdersChartData {
 interface OrdersChartResponse {
   data: OrdersChartData[];
   total_orders: number;
+  total_sales: number;
 }
 
 interface PeriodStatsProps {
@@ -58,7 +59,7 @@ const PeriodStats: React.FC<PeriodStatsProps> = ({ dateFrom, dateTo }) => {
         pastParams.append('date_to', pastTo);
         
         const pastResponse = await fetch(`${apiUrl}/analytics/orders-chart?${pastParams.toString()}`);
-        if (!pastResponse.ok) throw new Error(`HTTP error! status: ${currentResponse.status}`);
+        if (!pastResponse.ok) throw new Error(`HTTP error! status: ${pastResponse.status}`);
         const pastData: OrdersChartResponse = await pastResponse.json();
         
         setCurrentPeriodData(currentData);
@@ -134,10 +135,9 @@ const PeriodStats: React.FC<PeriodStatsProps> = ({ dateFrom, dateTo }) => {
   const pastOrders = pastPeriodData.total_orders;
   const ordersChange = currentOrders - pastOrders;
 
-  // Для продаж используем примерную оценку (можно убрать, если не нужна)
-  const estimatedOrderValue = 1500; // Примерная средняя стоимость заказа
-  const currentSales = currentOrders * estimatedOrderValue;
-  const pastSales = pastOrders * estimatedOrderValue;
+  // Используем реальные данные о продажах из API
+  const currentSales = currentPeriodData.total_sales;
+  const pastSales = pastPeriodData.total_sales;
   const salesChange = currentSales - pastSales;
 
   const formatCurrency = (amount: number) => {
@@ -152,7 +152,7 @@ const PeriodStats: React.FC<PeriodStatsProps> = ({ dateFrom, dateTo }) => {
   const formatChange = (change: number) => {
     if (change === 0) return '0';
     const sign = change > 0 ? '+' : '';
-    return `${sign}${change}`;
+    return `${sign}${formatCurrency(Math.abs(change))}`;
   };
 
   const getChangeClass = (change: number) => {
@@ -174,7 +174,7 @@ const PeriodStats: React.FC<PeriodStatsProps> = ({ dateFrom, dateTo }) => {
         <h3>Заказы</h3>
         <div className="stat-value">{currentOrders}</div>
         <div className={`stat-change ${getChangeClass(ordersChange)}`}>
-          {formatChange(ordersChange)}
+          {ordersChange > 0 ? '+' : ''}{ordersChange}
         </div>
       </div>
       <div className="stat-card-compact">

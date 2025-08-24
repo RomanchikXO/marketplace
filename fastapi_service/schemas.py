@@ -47,3 +47,4 @@ class OrdersChartData(BaseModel):
 class OrdersChartResponse(BaseModel):
     data: list[OrdersChartData]
     total_orders: int
+    total_sales: float

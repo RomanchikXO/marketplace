@@ -141,9 +141,16 @@ async def get_orders_chart(
             WbOrders.date <= end_date + timedelta(days=1),
         ).scalar()
         
+        # Получаем общую сумму продаж по полю pricewithdisc
+        total_sales = db.query(func.sum(WbOrders.pricewithdisc)).filter(
+            WbOrders.date >= start_date,
+            WbOrders.date <= end_date + timedelta(days=1),
+        ).scalar()
+        
         return OrdersChartResponse(
             data=chart_data,
-            total_orders=total_orders or 0
+            total_orders=total_orders or 0,
+            total_sales=float(total_sales or 0)
         )
         
     except Exception as e:
