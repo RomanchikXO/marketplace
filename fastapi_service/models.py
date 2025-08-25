@@ -60,3 +60,51 @@ class WbOrders(Base):
     gnumber = Column(String(255), nullable=False)
     srid = Column(String(255), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Stocks(Base):
+    __tablename__ = "wb_stocks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    lk_id = Column(Integer, nullable=False, default=1)
+    lastchangedate = Column(DateTime, nullable=False)
+    warehousename = Column(String(255), nullable=False)
+    supplierarticle = Column(String(255), nullable=False)
+    nmid = Column(Integer, nullable=False)
+    barcode = Column(BigInteger, nullable=True)
+    quantity = Column(Integer, nullable=False)
+    inwaytoclient = Column(Integer, nullable=False)
+    inwayfromclient = Column(Integer, nullable=False)
+    quantityfull = Column(Integer, nullable=False)
+    category = Column(String(255), nullable=False)
+    techsize = Column(String(255), nullable=True)
+    issupply = Column(Boolean, nullable=False)
+    isrealization = Column(Boolean, nullable=False)
+    sccode = Column(String(255), nullable=False)
+    added_db = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Nmids(Base):
+    __tablename__ = "wb_nmids"
+
+    id = Column(Integer, primary_key=True, index=True)
+    lk_id = Column(Integer, nullable=False, default=1)
+    nmid = Column(Integer, nullable=False)
+    imtid = Column(Integer, nullable=True)
+    nmuuid = Column(String(255), nullable=True)
+    subjectid = Column(Integer, nullable=True)
+    subjectname = Column(String(255), nullable=True)
+    vendorcode = Column(String(255), nullable=True)
+    brand = Column(String(255), nullable=True)
+    title = Column(String(255), nullable=True)
+    description = Column(String(255), nullable=True)
+    needkiz = Column(Boolean, nullable=True)
+    dimensions = Column(String(255), nullable=True)
+    characteristics = Column(String(255), nullable=True)
+    sizes = Column(String(255), nullable=True)
+    tag_ids = Column(String(255), nullable=True)
+    created_at = Column(DateTime, nullable=True)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now())
+    added_db = Column(DateTime, nullable=False)
+    is_active = Column(Boolean, default=True)

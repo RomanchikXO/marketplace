@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timedelta
 from database import get_db, create_tables
-from models import User, WbOrders, Base
+from models import User, WbOrders, Stocks, Nmids, Base
 from schemas import UserRegister, UserLogin, UserLoginResponse, UserRegisterResponse, OrdersChartResponse, OrdersChartData
 
 app = FastAPI(title="Marketplace API")
