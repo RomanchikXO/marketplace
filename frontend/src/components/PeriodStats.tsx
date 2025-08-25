@@ -103,8 +103,6 @@ const PeriodStats: React.FC<PeriodStatsProps> = ({ dateFrom, dateTo }) => {
         </div>
         <div className="stat-card-compact">
           <h3>Товары в наличии</h3>
-          <div className="stat-value">2,439</div>
-          <div className="stat-change negative">-23</div>
         </div>
       </div>
     );
@@ -130,8 +128,7 @@ const PeriodStats: React.FC<PeriodStatsProps> = ({ dateFrom, dateTo }) => {
         </div>
         <div className="stat-card-compact">
           <h3>Товары в наличии</h3>
-          <div className="stat-value">2,439</div>
-          <div className="stat-change negative">-23</div>
+          <div className="stat-value"></div>
         </div>
       </div>
     );
