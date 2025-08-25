@@ -8,6 +8,7 @@ interface Product {
   subjectname: string;
   orders: number;
   quantity: number;
+  orders_per_day_7d: number;
 }
 
 interface ProductsTableProps {
@@ -104,7 +105,7 @@ const ProductsTable: React.FC<ProductsTableProps> = ({ dateFrom, dateTo }) => {
                   <td>---%</td>
                   <td>{product.orders}</td>
                   <td>{product.quantity}</td>
-                  <td>{product.orders > 0 ? Math.round(product.quantity / (product.orders / 7)) : '∞'} дней</td>
+                  <td>{product.orders_per_day_7d} дней</td>
                   <td>₽ ---</td>
                   <td style={{ color: '#00ff41' }}>---%</td>
                 </tr>

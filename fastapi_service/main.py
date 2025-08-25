@@ -2,7 +2,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, case
 from datetime import datetime, timedelta
 from database import get_db, create_tables
 from models import User, WbOrders, Stocks, Nmids, Base
@@ -181,23 +181,24 @@ async def get_stocks(db: Session = Depends(get_db)):
 
 @app.get("/analytics/products")
 async def get_products(
-    date_from: str = None,
-    date_to: str = None,
-    db: Session = Depends(get_db)
+        date_from: str = None,
+        date_to: str = None,
+        db: Session = Depends(get_db)
 ):
     """Получить все артикулы с заказами и остатками"""
-    
+
     try:
         # Если даты не указаны, берем последние 30 дней
         if not date_from:
             date_from = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
         if not date_to:
             date_to = datetime.now().strftime('%Y-%m-%d')
-        
+
         start_date = datetime.strptime(date_from, '%Y-%m-%d')
         end_date = datetime.strptime(date_to, '%Y-%m-%d')
-        
-        # Оптимизированный запрос через JOIN'ы
+
+        last_7_days = datetime.now() - timedelta(days=7)
+
         products = db.query(
             Nmids.nmid,
             func.count(func.distinct(WbOrders.id)).label('orders'),
@@ -205,33 +206,47 @@ async def get_products(
                 func.coalesce(
                     db.query(func.sum(Stocks.quantity))
                     .filter(Stocks.nmid == Nmids.nmid)
-                    .as_scalar(), 
+                    .as_scalar(),
                     0
-                ), 
+                ),
                 0
-            ).label('quantity')
+            ).label('quantity'),
+            # количество заказов за последние 7 дней / 7
+            (
+                    func.count(
+                        func.distinct(
+                            case(
+                                (
+                                    WbOrders.date >= last_7_days,
+                                    WbOrders.id
+                                )
+                            )
+                        )
+                    ) / 7.0
+            ).label("orders_per_day_7d")
         ).outerjoin(
-            WbOrders, 
-            (Nmids.nmid == WbOrders.nmid) & 
-            (WbOrders.date >= start_date) & 
+            WbOrders,
+            (Nmids.nmid == WbOrders.nmid) &
+            (WbOrders.date >= start_date) &
             (WbOrders.date <= end_date + timedelta(days=1))
         ).filter(
             Nmids.is_active == True
         ).group_by(
             Nmids.nmid
         ).all()
-        
+
         return {
             "products": [
                 {
                     "nmid": row.nmid,
                     "orders": row.orders,
-                    "quantity": row.quantity
+                    "quantity": row.quantity,
+                    "orders_per_day_7d": int(row.quantity / row.orders_per_day_7d) if row.orders_per_day_7d else 0
                 }
                 for row in products
             ]
         }
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
