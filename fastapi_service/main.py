@@ -160,6 +160,25 @@ async def get_orders_chart(
         )
 
 
+@app.get("/analytics/stocks")
+async def get_stocks(db: Session = Depends(get_db)):
+    """Получить общие остатки товаров"""
+    
+    try:
+        # Сумма всех остатков
+        total_stocks = db.query(func.sum(Stocks.quantity)).scalar()
+        
+        return {
+            "total_stocks": int(total_stocks or 0)
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка получения данных об остатках: {str(e)}"
+        )
+
+
 @app.get("/")
 async def root():
     return {"message": "FastAPI is running!"}
