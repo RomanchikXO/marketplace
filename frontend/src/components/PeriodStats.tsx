@@ -19,6 +19,7 @@ interface PeriodStatsProps {
 const PeriodStats: React.FC<PeriodStatsProps> = ({ dateFrom, dateTo }) => {
   const [currentPeriodData, setCurrentPeriodData] = useState<OrdersChartResponse | null>(null);
   const [pastPeriodData, setPastPeriodData] = useState<OrdersChartResponse | null>(null);
+  const [stocksData, setStocksData] = useState<{ total_stocks: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,11 +60,17 @@ const PeriodStats: React.FC<PeriodStatsProps> = ({ dateFrom, dateTo }) => {
         pastParams.append('date_to', pastTo);
         
         const pastResponse = await fetch(`${apiUrl}/analytics/orders-chart?${pastParams.toString()}`);
-        if (!pastResponse.ok) throw new Error(`HTTP error! status: ${pastResponse.status}`);
+        if (!pastResponse.ok) throw new Error(`HTTP error! status: ${currentResponse.status}`);
         const pastData: OrdersChartResponse = await pastResponse.json();
+        
+        // Загружаем данные об остатках
+        const stocksResponse = await fetch(`${apiUrl}/analytics/stocks`);
+        if (!stocksResponse.ok) throw new Error(`HTTP error! status: ${stocksResponse.status}`);
+        const stocksData = await stocksResponse.json();
         
         setCurrentPeriodData(currentData);
         setPastPeriodData(pastData);
+        setStocksData(stocksData);
         
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка загрузки статистики');
@@ -184,8 +191,8 @@ const PeriodStats: React.FC<PeriodStatsProps> = ({ dateFrom, dateTo }) => {
       </div>
       <div className="stat-card-compact">
         <h3>Товары в наличии</h3>
-        <div className="stat-value">2,439</div>
-        <div className="stat-change negative">-23</div>
+        <div className="stat-value">{loading ? 'Загрузка...' : (stocksData?.total_stocks || 0)}</div>
+        <div className="stat-change">-</div>
       </div>
     </div>
   );
