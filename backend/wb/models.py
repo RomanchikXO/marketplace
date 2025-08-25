@@ -80,7 +80,7 @@ class Stocks(models.Model):
     days_in_stock_last_30 = models.IntegerField(null=True, default=0)
 
     class Meta:
-        unique_together = ['nmid', 'lk', 'supplierarticle', 'warehousename']
+        unique_together = ['nmid', 'lk', 'supplierarticle', 'warehousename', 'techsize']
         verbose_name_plural = "Отстаки товаров на складах"
 
     def __str__(self):
