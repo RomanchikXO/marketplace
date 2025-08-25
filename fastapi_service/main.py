@@ -179,6 +179,66 @@ async def get_stocks(db: Session = Depends(get_db)):
         )
 
 
+@app.get("/analytics/products")
+async def get_products(
+    date_from: str = None,
+    date_to: str = None,
+    db: Session = Depends(get_db)
+):
+    """Получить все артикулы с заказами и остатками"""
+    
+    try:
+        # Если даты не указаны, берем последние 30 дней
+        if not date_from:
+            date_from = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+        if not date_to:
+            date_to = datetime.now().strftime('%Y-%m-%d')
+        
+        start_date = datetime.strptime(date_from, '%Y-%m-%d')
+        end_date = datetime.strptime(date_to, '%Y-%m-%d')
+        
+        # Оптимизированный запрос через JOIN'ы
+        products = db.query(
+            Nmids.nmid,
+            func.count(func.distinct(WbOrders.id)).label('orders'),
+            func.coalesce(
+                func.coalesce(
+                    db.query(func.sum(Stocks.quantity))
+                    .filter(Stocks.nmid == Nmids.nmid)
+                    .as_scalar(), 
+                    0
+                ), 
+                0
+            ).label('quantity')
+        ).outerjoin(
+            WbOrders, 
+            (Nmids.nmid == WbOrders.nmid) & 
+            (WbOrders.date >= start_date) & 
+            (WbOrders.date <= end_date + timedelta(days=1))
+        ).filter(
+            Nmids.is_active == True
+        ).group_by(
+            Nmids.nmid
+        ).all()
+        
+        return {
+            "products": [
+                {
+                    "nmid": row.nmid,
+                    "orders": row.orders,
+                    "quantity": row.quantity
+                }
+                for row in products
+            ]
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка получения данных о товарах: {str(e)}"
+        )
+
+
 @app.get("/")
 async def root():
     return {"message": "FastAPI is running!"}

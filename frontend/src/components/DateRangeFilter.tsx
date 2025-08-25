@@ -3,9 +3,15 @@ import './DateRangeFilter.css';
 
 interface DateRangeFilterProps {
   onDateRangeChange: (dateFrom: string, dateTo: string) => void;
+  currentDateFrom?: string;
+  currentDateTo?: string;
 }
 
-const DateRangeFilter: React.FC<DateRangeFilterProps> = ({ onDateRangeChange }) => {
+const DateRangeFilter: React.FC<DateRangeFilterProps> = ({ 
+  onDateRangeChange, 
+  currentDateFrom, 
+  currentDateTo 
+}) => {
   const [isFromOpen, setIsFromOpen] = useState(false);
   const [isToOpen, setIsToOpen] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
