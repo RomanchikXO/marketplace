@@ -10,10 +10,11 @@ class FrontendUser(models.Model):
     hashed_password = models.CharField(max_length=255)
     is_active = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    wb_lks = models.ManyToManyField('wb.WbLk', blank=True, related_name='frontend_users', verbose_name='WB Личные кабинеты')
 
     class Meta:
         db_table = 'frontend_users'  # Указываем существующую таблицу
-        managed = False  # Django не будет управлять этой таблицей
+        managed = True  # Django будет управлять этой таблицей
 
     def __str__(self):
         return self.nickname

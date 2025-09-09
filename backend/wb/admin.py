@@ -1,15 +1,10 @@
 from django.contrib import admin
-from .models import Groups, WbLk, nmids, Stocks, Orders
-
-
-@admin.register(Groups)
-class GroupsAdmin(admin.ModelAdmin):
-    list_display = ('name', 'permissions')
+from .models import WbLk, nmids, Stocks, Orders
 
 
 @admin.register(WbLk)
 class WbLkAdmin(admin.ModelAdmin):
-    list_display = ('name', 'groups', 'inn')
+    list_display = ('name', 'inn')
 
 
 @admin.register(nmids)
