@@ -9,9 +9,8 @@ export const useApiWithWbLks = () => {
     const url = new URL(`${apiUrl}${endpoint}`);
     
     // Добавляем выбранные WB кабинеты в параметры запроса
-    if (selectedWbLks.length > 0) {
-      url.searchParams.set('wb_lk_ids', selectedWbLks.join(','));
-    }
+    // Если не выбрано ни одного кабинета - передаем пустую строку для получения пустых данных
+    url.searchParams.set('wb_lk_ids', selectedWbLks.length > 0 ? selectedWbLks.join(',') : '');
     
     // Добавляем дополнительные параметры
     if (params) {

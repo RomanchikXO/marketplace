@@ -296,6 +296,10 @@ async def get_orders_chart(
 ):
     """Получить данные заказов с фильтрами по датам для графика"""
     
+    # Если wb_lk_ids пустая строка или None - возвращаем пустые данные
+    if not wb_lk_ids or wb_lk_ids.strip() == '':
+        return OrdersChartResponse(data=[], total_orders=0, total_sales=0.0)
+    
     # Если даты не указаны, берем последние 30 дней
     if not date_from:
         date_from = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
@@ -328,10 +332,13 @@ async def get_orders_chart(
         )
         
         # Добавляем фильтрацию по WB кабинетам если указаны
-        if wb_lk_ids:
+        if wb_lk_ids and wb_lk_ids.strip():
             wb_lk_id_list = [int(id.strip()) for id in wb_lk_ids.split(',') if id.strip()]
             if wb_lk_id_list:
                 query = query.filter(WbOrders.lk_id.in_(wb_lk_id_list))
+            else:
+                # Если wb_lk_ids пустая строка или содержит только пробелы - возвращаем пустые данные
+                query = query.filter(WbOrders.lk_id == -1)  # Несуществующий ID
         
         # Получаем количество заказов по дням в указанном диапазоне
         orders_by_date = query.group_by(
@@ -360,11 +367,15 @@ async def get_orders_chart(
         )
         
         # Добавляем фильтрацию по WB кабинетам если указаны
-        if wb_lk_ids:
+        if wb_lk_ids and wb_lk_ids.strip():
             wb_lk_id_list = [int(id.strip()) for id in wb_lk_ids.split(',') if id.strip()]
             if wb_lk_id_list:
                 total_orders_query = total_orders_query.filter(WbOrders.lk_id.in_(wb_lk_id_list))
                 total_sales_query = total_sales_query.filter(WbOrders.lk_id.in_(wb_lk_id_list))
+            else:
+                # Если wb_lk_ids пустая строка или содержит только пробелы - возвращаем пустые данные
+                total_orders_query = total_orders_query.filter(WbOrders.lk_id == -1)
+                total_sales_query = total_sales_query.filter(WbOrders.lk_id == -1)
         
         # Получаем общее количество заказов за период
         total_orders = total_orders_query.scalar()
@@ -392,15 +403,22 @@ async def get_stocks(
 ):
     """Получить общие остатки товаров"""
     
+    # Если wb_lk_ids пустая строка или None - возвращаем пустые данные
+    if not wb_lk_ids or wb_lk_ids.strip() == '':
+        return {"total_stocks": 0}
+    
     try:
         # Подготавливаем базовый запрос
         query = db.query(func.sum(Stocks.quantity))
         
         # Добавляем фильтрацию по WB кабинетам если указаны
-        if wb_lk_ids:
+        if wb_lk_ids and wb_lk_ids.strip():
             wb_lk_id_list = [int(id.strip()) for id in wb_lk_ids.split(',') if id.strip()]
             if wb_lk_id_list:
                 query = query.filter(Stocks.lk_id.in_(wb_lk_id_list))
+            else:
+                # Если wb_lk_ids пустая строка или содержит только пробелы - возвращаем пустые данные
+                query = query.filter(Stocks.lk_id == -1)  # Несуществующий ID
         
         # Сумма всех остатков
         total_stocks = query.scalar()
@@ -425,6 +443,10 @@ async def get_products(
 ):
     """Получить все артикулы с заказами и остатками"""
 
+    # Если wb_lk_ids пустая строка или None - возвращаем пустые данные
+    if not wb_lk_ids or wb_lk_ids.strip() == '':
+        return {"products": []}
+
     try:
         # Если даты не указаны, берем последние 30 дней
         if not date_from:
@@ -445,19 +467,25 @@ async def get_products(
         ]
         
         # Добавляем фильтрацию по WB кабинетам если указаны
-        if wb_lk_ids:
+        if wb_lk_ids and wb_lk_ids.strip():
             wb_lk_id_list = [int(id.strip()) for id in wb_lk_ids.split(',') if id.strip()]
             if wb_lk_id_list:
                 join_conditions.append(WbOrders.lk_id.in_(wb_lk_id_list))
+            else:
+                # Если wb_lk_ids пустая строка или содержит только пробелы - возвращаем пустые данные
+                join_conditions.append(WbOrders.lk_id == -1)
         
         join_condition = and_(*join_conditions)
         
         # Подготавливаем условия для Stocks
         stocks_query = db.query(func.sum(Stocks.quantity)).filter(Stocks.nmid == Nmids.nmid)
-        if wb_lk_ids:
+        if wb_lk_ids and wb_lk_ids.strip():
             wb_lk_id_list = [int(id.strip()) for id in wb_lk_ids.split(',') if id.strip()]
             if wb_lk_id_list:
                 stocks_query = stocks_query.filter(Stocks.lk_id.in_(wb_lk_id_list))
+            else:
+                # Если wb_lk_ids пустая строка или содержит только пробелы - возвращаем пустые данные
+                stocks_query = stocks_query.filter(Stocks.lk_id == -1)
 
         products = db.query(
             Nmids.nmid,
