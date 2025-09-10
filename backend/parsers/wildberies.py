@@ -304,167 +304,176 @@ async def wb_api(session, param):
 
 
 async def get_orders():
-    cabinets = await get_data_from_db("wb_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
+    cabinets = await get_data_from_db("wb_wblk", ["id", "name", "token"])
     for cab in cabinets:
-        async with aiohttp.ClientSession() as session:
-            date_from = (datetime.now() + timedelta(hours=3) - timedelta(days=14)).replace(hour=0, minute=0, second=0, microsecond=0)
-            param = {
-                "type": "orders",
-                "API_KEY": cab["token"],
-                "date_from": str(date_from),
-                "flag": 0
-            }
-            response = await wb_api(session, param)
-            conn = await async_connect_to_database()
-            if not conn:
-                logger.warning("Ошибка подключения к БД")
-                raise
-            try:
-                for order in response:
-                    await add_set_data_from_db(
-                        conn=conn,
-                        table_name="wb_orders",
-                        data=dict(
-                            lk_id=cab["id"],
-                            date=parse_datetime(order["date"]),
-                            lastchangedate=parse_datetime(order["lastChangeDate"]),
-                            warehousename=order["warehouseName"].replace("Виртуальный ", "") if order["warehouseName"].startswith("Виртуальный") else order["warehouseName"],
-                            warehousetype=order["warehouseType"],
-                            countryname=order["countryName"],
-                            oblastokrugname=order["oblastOkrugName"],
-                            regionname=order["regionName"],
-                            supplierarticle=order["supplierArticle"],
-                            nmid=order["nmId"],
-                            barcode=int(order["barcode"]) if order.get("barcode") else None,
-                            category=order["category"],
-                            subject=order["subject"],
-                            brand=order["brand"],
-                            techsize=order["techSize"],
-                            incomeid=order["incomeID"],
-                            issupply=order["isSupply"],
-                            isrealization=order["isRealization"],
-                            totalprice=order["totalPrice"],
-                            discountpercent=order["discountPercent"],
-                            spp=order["spp"],
-                            finishedprice=float(order["finishedPrice"]),
-                            pricewithdisc=float(order["priceWithDisc"]),
-                            iscancel=order["isCancel"],
-                            canceldate=parse_datetime(order["cancelDate"]),
-                            sticker=order["sticker"],
-                            gnumber=order["gNumber"],
-                            srid=order["srid"],
-                        ),
-                        conflict_fields=['nmid', 'lk_id', 'srid']
-                    )
-            except Exception as e:
-                logger.error(f"Ошибка при добавлении заказов в БД. Error: {e}")
-            finally:
-                await conn.close()
+        try:
+            async with aiohttp.ClientSession() as session:
+                date_from = (datetime.now() + timedelta(hours=3) - timedelta(days=14)).replace(hour=0, minute=0, second=0, microsecond=0)
+                param = {
+                    "type": "orders",
+                    "API_KEY": cab["token"],
+                    "date_from": str(date_from),
+                    "flag": 0
+                }
+                response = await wb_api(session, param)
+                conn = await async_connect_to_database()
+                if not conn:
+                    logger.warning("Ошибка подключения к БД")
+                    raise
+                try:
+                    for order in response:
+                        await add_set_data_from_db(
+                            conn=conn,
+                            table_name="wb_orders",
+                            data=dict(
+                                lk_id=cab["id"],
+                                date=parse_datetime(order["date"]),
+                                lastchangedate=parse_datetime(order["lastChangeDate"]),
+                                warehousename=order["warehouseName"].replace("Виртуальный ", "") if order["warehouseName"].startswith("Виртуальный") else order["warehouseName"],
+                                warehousetype=order["warehouseType"],
+                                countryname=order["countryName"],
+                                oblastokrugname=order["oblastOkrugName"],
+                                regionname=order["regionName"],
+                                supplierarticle=order["supplierArticle"],
+                                nmid=order["nmId"],
+                                barcode=int(order["barcode"]) if order.get("barcode") else None,
+                                category=order["category"],
+                                subject=order["subject"],
+                                brand=order["brand"],
+                                techsize=order["techSize"],
+                                incomeid=order["incomeID"],
+                                issupply=order["isSupply"],
+                                isrealization=order["isRealization"],
+                                totalprice=order["totalPrice"],
+                                discountpercent=order["discountPercent"],
+                                spp=order["spp"],
+                                finishedprice=float(order["finishedPrice"]),
+                                pricewithdisc=float(order["priceWithDisc"]),
+                                iscancel=order["isCancel"],
+                                canceldate=parse_datetime(order["cancelDate"]),
+                                sticker=order["sticker"],
+                                gnumber=order["gNumber"],
+                                srid=order["srid"],
+                            ),
+                            conflict_fields=['nmid', 'lk_id', 'srid']
+                        )
+                except Exception as e:
+                    logger.error(f"Ошибка при добавлении заказов в БД. Error: {e}")
+                finally:
+                    await conn.close()
+        except Exception as e:
+            logger.error(f"Ошибка обновления артикулов для {cab['name']}. Ошибка: {e}")
 
 
 async def get_nmids():
     # получаем все карточки товаров
-    cabinets = await get_data_from_db("wb_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
+    cabinets = await get_data_from_db("wb_wblk", ["id", "name", "token"])
 
     for cab in cabinets:
-        async with aiohttp.ClientSession() as session:
-            param = {
-                "type": "get_nmids",
-                "API_KEY": cab["token"],
-            }
-            while True:
+        try:
+            async with aiohttp.ClientSession() as session:
+                param = {
+                    "type": "get_nmids",
+                    "API_KEY": cab["token"],
+                }
+                while True:
+                    response = await wb_api(session, param)
+                    if not response.get("cards"):
+                        logger.error(f"Ошибка при получении артикулов: {response}")
+                        raise
+                    conn = await async_connect_to_database()
+                    if not conn:
+                        logger.error("Ошибка подключения к БД")
+                        raise
+                    try:
+                        for resp in response["cards"]:
+                            await add_set_data_from_db(
+                                conn=conn,
+                                table_name="wb_nmids",
+                                data=dict(
+                                    lk_id=cab["id"],
+                                    nmid=resp["nmID"],
+                                    imtid=resp["imtID"],
+                                    nmuuid=resp["nmUUID"],
+                                    subjectid=resp["subjectID"],
+                                    subjectname=resp["subjectName"],
+                                    vendorcode=resp["vendorCode"],
+                                    brand=resp["brand"],
+                                    title=resp["title"],
+                                    description=resp["description"],
+                                    needkiz=resp["needKiz"],
+                                    dimensions=json.dumps(resp["dimensions"]),
+                                    characteristics=json.dumps(resp["characteristics"]),
+                                    sizes=json.dumps(resp["sizes"]),
+                                    tag_ids = json.dumps([]),
+                                    created_at=parse_datetime(resp["createdAt"]),
+                                    updated_at=parse_datetime(resp["updatedAt"]),
+                                    added_db=datetime.now() + timedelta(hours=3)
+                                ),
+                                conflict_fields=["nmid", "lk_id"]
+                            )
+                    except Exception as e:
+                        logger.error(f"Ошибка при добавлении артикулов в бд {e}")
+                        raise
+                    finally:
+                        await conn.close()
+
+
+                    if response["cursor"]["total"] < 100:
+                        break
+                    else:
+                        param["updatedAt"] = response["cursor"]["updatedAt"]
+                        param["nmID"] = response["cursor"]["nmID"]
+        except Exception as e:
+            logger.error(f"Ошибка обновления артикулов для {cab['name']}. Ошибка: {e}")
+
+
+async def get_stocks_data_2_weeks():
+    cabinets = await get_data_from_db("wb_wblk", ["id", "name", "token"])
+
+    for cab in cabinets:
+        try:
+            async with aiohttp.ClientSession() as session:
+                param = {
+                    "type": "get_stocks_data",
+                    "API_KEY": cab["token"],
+                    "dateFrom": str(datetime.now() + timedelta(hours=3) - timedelta(days=1)), #вчерашний день с текущим временем
+                }
                 response = await wb_api(session, param)
-                if not response.get("cards"):
-                    logger.error(f"Ошибка при получении артикулов: {response}")
-                    raise
+
                 conn = await async_connect_to_database()
                 if not conn:
                     logger.error("Ошибка подключения к БД")
                     raise
                 try:
-                    for resp in response["cards"]:
+                    for quant in response:
                         await add_set_data_from_db(
                             conn=conn,
-                            table_name="wb_nmids",
+                            table_name="wb_stocks",
                             data=dict(
                                 lk_id=cab["id"],
-                                nmid=resp["nmID"],
-                                imtid=resp["imtID"],
-                                nmuuid=resp["nmUUID"],
-                                subjectid=resp["subjectID"],
-                                subjectname=resp["subjectName"],
-                                vendorcode=resp["vendorCode"],
-                                brand=resp["brand"],
-                                title=resp["title"],
-                                description=resp["description"],
-                                needkiz=resp["needKiz"],
-                                dimensions=json.dumps(resp["dimensions"]),
-                                characteristics=json.dumps(resp["characteristics"]),
-                                sizes=json.dumps(resp["sizes"]),
-                                tag_ids = json.dumps([]),
-                                created_at=parse_datetime(resp["createdAt"]),
-                                updated_at=parse_datetime(resp["updatedAt"]),
+                                lastchangedate=parse_datetime(quant["lastChangeDate"]),
+                                warehousename=quant["warehouseName"],
+                                supplierarticle=quant["supplierArticle"],
+                                nmid=quant["nmId"],
+                                barcode=int(quant["barcode"]) if quant.get("barcode") else None,
+                                quantity=quant["quantity"],
+                                inwaytoclient=quant["inWayToClient"],
+                                inwayfromclient=quant["inWayFromClient"],
+                                quantityfull=quant["quantityFull"],
+                                category=quant["category"],
+                                techsize=quant["techSize"],
+                                issupply=quant["isSupply"],
+                                isrealization=quant["isRealization"],
+                                sccode=quant["SCCode"],
                                 added_db=datetime.now() + timedelta(hours=3)
+
                             ),
-                            conflict_fields=["nmid", "lk_id"]
+                            conflict_fields=['nmid', 'lk_id', 'supplierarticle', 'warehousename', 'techsize']
                         )
                 except Exception as e:
-                    logger.error(f"Ошибка при добавлении артикулов в бд {e}")
-                    raise
+                    logger.error(f"Ошибка при добавлении остатков в БД. Error: {e}")
                 finally:
                     await conn.close()
-
-
-                if response["cursor"]["total"] < 100:
-                    break
-                else:
-                    param["updatedAt"] = response["cursor"]["updatedAt"]
-                    param["nmID"] = response["cursor"]["nmID"]
-
-
-async def get_stocks_data_2_weeks():
-    cabinets = await get_data_from_db("wb_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
-
-    for cab in cabinets:
-        async with aiohttp.ClientSession() as session:
-            param = {
-                "type": "get_stocks_data",
-                "API_KEY": cab["token"],
-                "dateFrom": str(datetime.now() + timedelta(hours=3) - timedelta(days=1)), #вчерашний день с текущим временем
-            }
-            response = await wb_api(session, param)
-
-            conn = await async_connect_to_database()
-            if not conn:
-                logger.error("Ошибка подключения к БД")
-                raise
-            try:
-                for quant in response:
-                    await add_set_data_from_db(
-                        conn=conn,
-                        table_name="wb_stocks",
-                        data=dict(
-                            lk_id=cab["id"],
-                            lastchangedate=parse_datetime(quant["lastChangeDate"]),
-                            warehousename=quant["warehouseName"],
-                            supplierarticle=quant["supplierArticle"],
-                            nmid=quant["nmId"],
-                            barcode=int(quant["barcode"]) if quant.get("barcode") else None,
-                            quantity=quant["quantity"],
-                            inwaytoclient=quant["inWayToClient"],
-                            inwayfromclient=quant["inWayFromClient"],
-                            quantityfull=quant["quantityFull"],
-                            category=quant["category"],
-                            techsize=quant["techSize"],
-                            issupply=quant["isSupply"],
-                            isrealization=quant["isRealization"],
-                            sccode=quant["SCCode"],
-                            added_db=datetime.now() + timedelta(hours=3)
-
-                        ),
-                        conflict_fields=['nmid', 'lk_id', 'supplierarticle', 'warehousename', 'techsize']
-                    )
-            except Exception as e:
-                logger.error(f"Ошибка при добавлении остатков в БД. Error: {e}")
-            finally:
-                await conn.close()
+        except Exception as e:
+            logger.error(f"Ошибка обновления остатков для {cab['name']}. Ошибка: {e}")

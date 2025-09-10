@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useApiWithWbLks } from '../hooks/useApiWithWbLks';
 
 interface OrdersChartData {
   date: string;
@@ -22,6 +23,7 @@ const PeriodStats: React.FC<PeriodStatsProps> = ({ dateFrom, dateTo }) => {
   const [stocksData, setStocksData] = useState<{ total_stocks: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { fetchWithWbLks, selectedWbLks } = useApiWithWbLks();
 
   useEffect(() => {
     const fetchPeriodData = async () => {
@@ -29,7 +31,6 @@ const PeriodStats: React.FC<PeriodStatsProps> = ({ dateFrom, dateTo }) => {
       
       try {
         setLoading(true);
-        const apiUrl = process.env.REACT_APP_API_URL || '/api';
         
         // Вычисляем длительность текущего периода
         const startDate = new Date(dateFrom);
@@ -46,27 +47,25 @@ const PeriodStats: React.FC<PeriodStatsProps> = ({ dateFrom, dateTo }) => {
         const pastTo = pastEndDate.toISOString().split('T')[0];
         
         // Загружаем данные для текущего периода
-        const currentParams = new URLSearchParams();
-        currentParams.append('date_from', dateFrom);
-        currentParams.append('date_to', dateTo);
-        
-        const currentResponse = await fetch(`${apiUrl}/analytics/orders-chart?${currentParams.toString()}`);
-        if (!currentResponse.ok) throw new Error(`HTTP error! status: ${currentResponse.status}`);
-        const currentData: OrdersChartResponse = await currentResponse.json();
+        const currentData: OrdersChartResponse = await fetchWithWbLks('/analytics/orders-chart', {
+          method: 'GET',
+        }, {
+          date_from: dateFrom,
+          date_to: dateTo
+        });
         
         // Загружаем данные для прошлого периода
-        const pastParams = new URLSearchParams();
-        pastParams.append('date_from', pastFrom);
-        pastParams.append('date_to', pastTo);
-        
-        const pastResponse = await fetch(`${apiUrl}/analytics/orders-chart?${pastParams.toString()}`);
-        if (!pastResponse.ok) throw new Error(`HTTP error! status: ${currentResponse.status}`);
-        const pastData: OrdersChartResponse = await pastResponse.json();
+        const pastData: OrdersChartResponse = await fetchWithWbLks('/analytics/orders-chart', {
+          method: 'GET',
+        }, {
+          date_from: pastFrom,
+          date_to: pastTo
+        });
         
         // Загружаем данные об остатках
-        const stocksResponse = await fetch(`${apiUrl}/analytics/stocks`);
-        if (!stocksResponse.ok) throw new Error(`HTTP error! status: ${stocksResponse.status}`);
-        const stocksData = await stocksResponse.json();
+        const stocksData = await fetchWithWbLks('/analytics/stocks', {
+          method: 'GET',
+        });
         
         setCurrentPeriodData(currentData);
         setPastPeriodData(pastData);
@@ -81,7 +80,7 @@ const PeriodStats: React.FC<PeriodStatsProps> = ({ dateFrom, dateTo }) => {
     };
 
     fetchPeriodData();
-  }, [dateFrom, dateTo]);
+  }, [dateFrom, dateTo, selectedWbLks]);
 
   if (loading) {
     return (

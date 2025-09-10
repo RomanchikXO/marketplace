@@ -2,7 +2,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Header
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case
+from sqlalchemy import func, case, and_
 from datetime import datetime, timedelta
 from typing import Optional, List
 from database import get_db, create_tables
@@ -291,6 +291,7 @@ async def get_wb_lk_users(
 async def get_orders_chart(
     date_from: str = None, 
     date_to: str = None,
+    wb_lk_ids: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """Получить данные заказов с фильтрами по датам для графика"""
@@ -317,14 +318,23 @@ async def get_orders_chart(
         )
     
     try:
-        # Получаем количество заказов по дням в указанном диапазоне
-        orders_by_date = db.query(
+        # Подготавливаем базовый запрос
+        query = db.query(
             func.date(WbOrders.date).label('order_date'),
             func.count(WbOrders.id).label('count')
         ).filter(
             WbOrders.date >= start_date,
             WbOrders.date <= end_date + timedelta(days=1),  # +1 день чтобы включить end_date
-        ).group_by(
+        )
+        
+        # Добавляем фильтрацию по WB кабинетам если указаны
+        if wb_lk_ids:
+            wb_lk_id_list = [int(id.strip()) for id in wb_lk_ids.split(',') if id.strip()]
+            if wb_lk_id_list:
+                query = query.filter(WbOrders.lk_id.in_(wb_lk_id_list))
+        
+        # Получаем количество заказов по дням в указанном диапазоне
+        orders_by_date = query.group_by(
             func.date(WbOrders.date)
         ).order_by(
             func.date(WbOrders.date)
@@ -338,17 +348,29 @@ async def get_orders_chart(
                 count=row.count
             ))
         
-        # Получаем общее количество заказов за период
-        total_orders = db.query(func.count(WbOrders.id)).filter(
+        # Подготавливаем базовые запросы для total_orders и total_sales
+        total_orders_query = db.query(func.count(WbOrders.id)).filter(
             WbOrders.date >= start_date,
             WbOrders.date <= end_date + timedelta(days=1),
-        ).scalar()
+        )
+        
+        total_sales_query = db.query(func.sum(WbOrders.pricewithdisc)).filter(
+            WbOrders.date >= start_date,
+            WbOrders.date <= end_date + timedelta(days=1),
+        )
+        
+        # Добавляем фильтрацию по WB кабинетам если указаны
+        if wb_lk_ids:
+            wb_lk_id_list = [int(id.strip()) for id in wb_lk_ids.split(',') if id.strip()]
+            if wb_lk_id_list:
+                total_orders_query = total_orders_query.filter(WbOrders.lk_id.in_(wb_lk_id_list))
+                total_sales_query = total_sales_query.filter(WbOrders.lk_id.in_(wb_lk_id_list))
+        
+        # Получаем общее количество заказов за период
+        total_orders = total_orders_query.scalar()
         
         # Получаем общую сумму продаж по полю pricewithdisc
-        total_sales = db.query(func.sum(WbOrders.pricewithdisc)).filter(
-            WbOrders.date >= start_date,
-            WbOrders.date <= end_date + timedelta(days=1),
-        ).scalar()
+        total_sales = total_sales_query.scalar()
         
         return OrdersChartResponse(
             data=chart_data,
@@ -364,12 +386,24 @@ async def get_orders_chart(
 
 
 @app.get("/analytics/stocks")
-async def get_stocks(db: Session = Depends(get_db)):
+async def get_stocks(
+    wb_lk_ids: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
     """Получить общие остатки товаров"""
     
     try:
+        # Подготавливаем базовый запрос
+        query = db.query(func.sum(Stocks.quantity))
+        
+        # Добавляем фильтрацию по WB кабинетам если указаны
+        if wb_lk_ids:
+            wb_lk_id_list = [int(id.strip()) for id in wb_lk_ids.split(',') if id.strip()]
+            if wb_lk_id_list:
+                query = query.filter(Stocks.lk_id.in_(wb_lk_id_list))
+        
         # Сумма всех остатков
-        total_stocks = db.query(func.sum(Stocks.quantity)).scalar()
+        total_stocks = query.scalar()
         
         return {
             "total_stocks": int(total_stocks or 0)
@@ -386,6 +420,7 @@ async def get_stocks(db: Session = Depends(get_db)):
 async def get_products(
         date_from: str = None,
         date_to: str = None,
+        wb_lk_ids: Optional[str] = None,
         db: Session = Depends(get_db)
 ):
     """Получить все артикулы с заказами и остатками"""
@@ -402,14 +437,34 @@ async def get_products(
 
         last_7_days = datetime.now() - timedelta(days=7)
 
+        # Подготавливаем условия для JOIN с WbOrders
+        join_conditions = [
+            Nmids.nmid == WbOrders.nmid,
+            WbOrders.date >= start_date,
+            WbOrders.date <= end_date + timedelta(days=1)
+        ]
+        
+        # Добавляем фильтрацию по WB кабинетам если указаны
+        if wb_lk_ids:
+            wb_lk_id_list = [int(id.strip()) for id in wb_lk_ids.split(',') if id.strip()]
+            if wb_lk_id_list:
+                join_conditions.append(WbOrders.lk_id.in_(wb_lk_id_list))
+        
+        join_condition = and_(*join_conditions)
+        
+        # Подготавливаем условия для Stocks
+        stocks_query = db.query(func.sum(Stocks.quantity)).filter(Stocks.nmid == Nmids.nmid)
+        if wb_lk_ids:
+            wb_lk_id_list = [int(id.strip()) for id in wb_lk_ids.split(',') if id.strip()]
+            if wb_lk_id_list:
+                stocks_query = stocks_query.filter(Stocks.lk_id.in_(wb_lk_id_list))
+
         products = db.query(
             Nmids.nmid,
             func.count(func.distinct(WbOrders.id)).label('orders'),
             func.coalesce(
                 func.coalesce(
-                    db.query(func.sum(Stocks.quantity))
-                    .filter(Stocks.nmid == Nmids.nmid)
-                    .as_scalar(),
+                    stocks_query.as_scalar(),
                     0
                 ),
                 0
@@ -429,9 +484,7 @@ async def get_products(
             ).label("orders_per_day_7d")
         ).outerjoin(
             WbOrders,
-            (Nmids.nmid == WbOrders.nmid) &
-            (WbOrders.date >= start_date) &
-            (WbOrders.date <= end_date + timedelta(days=1))
+            join_condition
         ).filter(
             Nmids.is_active == True
         ).group_by(

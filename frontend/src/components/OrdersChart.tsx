@@ -13,6 +13,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import 'chartjs-adapter-date-fns';
+import { useApiWithWbLks } from '../hooks/useApiWithWbLks';
 
 ChartJS.register(
   CategoryScale,
@@ -44,27 +45,21 @@ const OrdersChart: React.FC<OrdersChartProps> = ({ dateFrom, dateTo }) => {
   const [chartData, setChartData] = useState<OrdersChartResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { fetchWithWbLks, selectedWbLks } = useApiWithWbLks();
 
   useEffect(() => {
     const fetchOrdersData = async () => {
       try {
         setLoading(true);
-        const apiUrl = process.env.REACT_APP_API_URL || '/api';
         
-        // Формируем URL с параметрами фильтра
-        const params = new URLSearchParams();
-        if (dateFrom) params.append('date_from', dateFrom);
-        if (dateTo) params.append('date_to', dateTo);
+        const params: Record<string, any> = {};
+        if (dateFrom) params.date_from = dateFrom;
+        if (dateTo) params.date_to = dateTo;
         
-        const fullUrl = `${apiUrl}/analytics/orders-chart?${params.toString()}`;
+        const data: OrdersChartResponse = await fetchWithWbLks('/analytics/orders-chart', {
+          method: 'GET',
+        }, params);
         
-        const response = await fetch(fullUrl);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data: OrdersChartResponse = await response.json();
         setChartData(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
@@ -78,7 +73,7 @@ const OrdersChart: React.FC<OrdersChartProps> = ({ dateFrom, dateTo }) => {
     if (dateFrom && dateTo) {
       fetchOrdersData();
     }
-  }, [dateFrom, dateTo]); // Перезагружаем данные при изменении фильтров
+  }, [dateFrom, dateTo, selectedWbLks]); // Перезагружаем данные при изменении фильтров или WB кабинетов
 
   if (loading) {
     return (

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useApiWithWbLks } from '../hooks/useApiWithWbLks';
 
 interface Product {
   nmid: number;
@@ -20,6 +21,7 @@ const ProductsTable: React.FC<ProductsTableProps> = ({ dateFrom, dateTo }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { fetchWithWbLks, selectedWbLks } = useApiWithWbLks();
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -27,15 +29,13 @@ const ProductsTable: React.FC<ProductsTableProps> = ({ dateFrom, dateTo }) => {
       
       try {
         setLoading(true);
-        const apiUrl = process.env.REACT_APP_API_URL || '/api';
-        const params = new URLSearchParams();
-        params.append('date_from', dateFrom);
-        params.append('date_to', dateTo);
+        const data = await fetchWithWbLks('/analytics/products', {
+          method: 'GET',
+        }, {
+          date_from: dateFrom,
+          date_to: dateTo
+        });
         
-        const response = await fetch(`${apiUrl}/analytics/products?${params.toString()}`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
-        const data = await response.json();
         setProducts(data.products);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
@@ -46,7 +46,7 @@ const ProductsTable: React.FC<ProductsTableProps> = ({ dateFrom, dateTo }) => {
     };
 
     fetchProducts();
-  }, [dateFrom, dateTo]);
+  }, [dateFrom, dateTo, selectedWbLks]);
 
   if (loading) {
     return (

@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Repricer, Analytics, Sorter, WbLkManager } from './modules';
+import { useWbLkContext } from '../contexts/WbLkContext';
 import './Dashboard.css';
 
 interface WbLk {
@@ -48,23 +49,23 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onUserUpdate }) =
   const navigate = useNavigate();
   const location = useLocation();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [selectedWbLks, setSelectedWbLks] = React.useState<number[]>([]);
+  const { selectedWbLks, addWbLk, removeWbLk, clearWbLks, selectAllWbLks } = useWbLkContext();
   const [isWbLkSelectorOpen, setIsWbLkSelectorOpen] = React.useState(false);
 
   const handleWbLkToggle = (wbLkId: number) => {
-    setSelectedWbLks(prev => 
-      prev.includes(wbLkId) 
-        ? prev.filter(id => id !== wbLkId)
-        : [...prev, wbLkId]
-    );
+    if (selectedWbLks.includes(wbLkId)) {
+      removeWbLk(wbLkId);
+    } else {
+      addWbLk(wbLkId);
+    }
   };
 
   const handleSelectAllWbLks = () => {
-    setSelectedWbLks(user.wb_lks.map(wbLk => wbLk.id));
+    selectAllWbLks(user.wb_lks || []);
   };
 
   const handleDeselectAllWbLks = () => {
-    setSelectedWbLks([]);
+    clearWbLks();
   };
 
   // Закрытие селектора при клике вне его

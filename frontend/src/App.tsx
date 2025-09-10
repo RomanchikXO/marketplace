@@ -5,13 +5,15 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard';
 import { useAuth } from './hooks/useAuth';
+import { WbLkProvider } from './contexts/WbLkContext';
 
 const App: React.FC = () => {
   const { user, login, register, logout, refreshUserProfile } = useAuth();
 
   return (
-    <Router>
-      <Routes>
+    <WbLkProvider>
+      <Router>
+        <Routes>
         {/* Публичные маршруты */}
         <Route
           path="/login"
@@ -57,8 +59,9 @@ const App: React.FC = () => {
           path="*"
           element={<Navigate to={user ? "/dashboard" : "/login"} replace />}
         />
-      </Routes>
-    </Router>
+        </Routes>
+      </Router>
+    </WbLkProvider>
   );
 };
 
