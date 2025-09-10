@@ -3,9 +3,8 @@
 .dashboard-container {
   position: relative;
   width: 100vw;
-  height: 100vh;
+  min-height: 100vh;
   background: #000;
-  overflow: hidden;
   font-family: 'Courier New', Courier, monospace;
   color: #00ff41;
 }
@@ -267,7 +266,7 @@
 /* Контент модулей */
 .module-content {
   padding: 40px;
-  height: 100%;
+  min-height: 100vh;
   overflow-y: auto;
 }
 

@@ -4,6 +4,8 @@
   margin: 0 auto;
   color: #00ff41;
   font-family: 'Courier New', monospace;
+  min-height: 100vh;
+  overflow-y: auto;
 }
 
 .wb-lk-header {
