@@ -466,16 +466,17 @@ async def get_products(
             WbOrders.date <= end_date + timedelta(days=1)
         ]
         
-        # Добавляем фильтрацию по WB кабинетам если указаны
+        join_condition = and_(*join_conditions)
+        
+        # Фильтрация артикулов по выбранным ЛК
+        nmids_filter = Nmids.is_active == True
         if wb_lk_ids and wb_lk_ids.strip():
             wb_lk_id_list = [int(id.strip()) for id in wb_lk_ids.split(',') if id.strip()]
             if wb_lk_id_list:
-                join_conditions.append(WbOrders.lk_id.in_(wb_lk_id_list))
+                nmids_filter = nmids_filter & (Nmids.lk_id.in_(wb_lk_id_list))
             else:
-                # Если wb_lk_ids пустая строка или содержит только пробелы - возвращаем пустые данные
-                join_conditions.append(WbOrders.lk_id == -1)
-        
-        join_condition = and_(*join_conditions)
+                # Если wb_lk_ids пустая строка - возвращаем пустые данные
+                nmids_filter = nmids_filter & (Nmids.lk_id == -1)
         
         # Подготавливаем условия для Stocks
         stocks_query = db.query(func.sum(Stocks.quantity)).filter(Stocks.nmid == Nmids.nmid)
@@ -514,7 +515,7 @@ async def get_products(
             WbOrders,
             join_condition
         ).filter(
-            Nmids.is_active == True
+            nmids_filter
         ).group_by(
             Nmids.nmid
         ).all()
