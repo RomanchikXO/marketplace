@@ -48,6 +48,42 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onUserUpdate }) =
   const navigate = useNavigate();
   const location = useLocation();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [selectedWbLks, setSelectedWbLks] = React.useState<number[]>([]);
+  const [isWbLkSelectorOpen, setIsWbLkSelectorOpen] = React.useState(false);
+
+  const handleWbLkToggle = (wbLkId: number) => {
+    setSelectedWbLks(prev => 
+      prev.includes(wbLkId) 
+        ? prev.filter(id => id !== wbLkId)
+        : [...prev, wbLkId]
+    );
+  };
+
+  const handleSelectAllWbLks = () => {
+    setSelectedWbLks(user.wb_lks.map(wbLk => wbLk.id));
+  };
+
+  const handleDeselectAllWbLks = () => {
+    setSelectedWbLks([]);
+  };
+
+  // Закрытие селектора при клике вне его
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.wb-lk-selector')) {
+        setIsWbLkSelectorOpen(false);
+      }
+    };
+
+    if (isWbLkSelectorOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isWbLkSelectorOpen]);
 
   const modules: ModuleCard[] = [
     {
@@ -184,21 +220,71 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onUserUpdate }) =
 
       {/* Основной контент */}
       <div className={`main-content ${!isHomePage ? 'with-sidebar' : ''}`}>
+        {/* Общий заголовок для всех страниц */}
+        <header className="dashboard-header">
+          <h1 className="welcome-title">
+            {isHomePage 
+              ? `Добро пожаловать, ${user.nickname || 'Пользователь'}!`
+              : currentModule?.title || 'Дашборд'
+            }
+          </h1>
+          <div className="header-controls">
+            {/* Мультиселектор WB личных кабинетов */}
+            <div className="wb-lk-selector">
+              <button 
+                className="wb-lk-selector-btn"
+                onClick={() => setIsWbLkSelectorOpen(!isWbLkSelectorOpen)}
+              >
+                🏪 WB кабинеты ({selectedWbLks.length}/{user.wb_lks.length})
+              </button>
+              
+              {isWbLkSelectorOpen && (
+                <div className="wb-lk-dropdown">
+                  <div className="wb-lk-dropdown-header">
+                    <button 
+                      className="wb-lk-select-all-btn"
+                      onClick={handleSelectAllWbLks}
+                    >
+                      Выбрать все
+                    </button>
+                    <button 
+                      className="wb-lk-deselect-all-btn"
+                      onClick={handleDeselectAllWbLks}
+                    >
+                      Снять все
+                    </button>
+                  </div>
+                  <div className="wb-lk-list">
+                    {user.wb_lks.map(wbLk => (
+                      <label key={wbLk.id} className="wb-lk-item">
+                        <input
+                          type="checkbox"
+                          checked={selectedWbLks.includes(wbLk.id)}
+                          onChange={() => handleWbLkToggle(wbLk.id)}
+                        />
+                        <span className="wb-lk-name">
+                          {wbLk.name}
+                          {wbLk.is_owner && <span className="owner-badge">👑</span>}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <button className="logout-btn-header" onClick={handleLogout}>
+              Выйти
+            </button>
+          </div>
+        </header>
+
         <Routes>
           {/* Главная страница дашборда */}
           <Route
             path="/"
             element={
               <div className="home-view">
-                <header className="dashboard-header">
-                  <h1 className="welcome-title">
-                    Добро пожаловать, {user.nickname || 'Пользователь'}!
-                  </h1>
-                  <button className="logout-btn-header" onClick={handleLogout}>
-                    Выйти
-                  </button>
-                </header>
-
                 <div className="modules-grid">
                   {modules.map(module => (
                     <div
