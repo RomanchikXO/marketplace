@@ -1,12 +1,13 @@
 # marketplace/fastapi_service/main.py
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Header
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case
 from datetime import datetime, timedelta
+from typing import Optional, List
 from database import get_db, create_tables
-from models import User, WbOrders, Stocks, Nmids, Base
-from schemas import UserRegister, UserLogin, UserLoginResponse, UserRegisterResponse, OrdersChartResponse, OrdersChartData
+from models import User, WbOrders, Stocks, Nmids, Base, WbLk
+from schemas import UserRegister, UserLogin, UserLoginResponse, UserRegisterResponse, OrdersChartResponse, OrdersChartData, UserResponse, WbLkResponse, WbLkCreate, UserWithWbLksResponse, ShareWbLkRequest
 
 app = FastAPI(title="Marketplace API")
 
@@ -17,6 +18,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Функция для получения текущего пользователя по header
+def get_current_user_from_header(x_user_id: int = Header(..., alias="X-User-ID"), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == x_user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Пользователь не найден"
+        )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Аккаунт не активирован"
+        )
+    return user
 
 
 @app.on_event("startup")
@@ -82,6 +99,192 @@ async def login(user_data: UserLogin, db: Session = Depends(get_db)):
         user=user,
         message="Вход выполнен успешно"
     )
+
+
+@app.get("/user/profile", response_model=UserWithWbLksResponse)
+async def get_user_profile(current_user: User = Depends(get_current_user_from_header)):
+    """Получить профиль текущего пользователя с его WB личными кабинетами"""
+    return current_user
+
+
+@app.get("/wb-lk", response_model=List[WbLkResponse])
+async def get_user_wb_lks(current_user: User = Depends(get_current_user_from_header)):
+    """Получить все WB личные кабинеты пользователя"""
+    wb_lks_with_ownership = []
+    for wb_lk in current_user.wb_lks:
+        wb_lk_dict = {
+            "id": wb_lk.id,
+            "name": wb_lk.name,
+            "token": wb_lk.token,
+            "number": wb_lk.number,
+            "cookie": wb_lk.cookie,
+            "authorizev3": wb_lk.authorizev3,
+            "inn": wb_lk.inn,
+            "tg_id": wb_lk.tg_id,
+            "owner_id": wb_lk.owner_id,
+            "is_owner": wb_lk.owner_id == current_user.id
+        }
+        wb_lks_with_ownership.append(wb_lk_dict)
+    return wb_lks_with_ownership
+
+
+@app.post("/wb-lk", response_model=WbLkResponse)
+async def create_wb_lk(
+    wb_lk_data: WbLkCreate,
+    current_user: User = Depends(get_current_user_from_header),
+    db: Session = Depends(get_db)
+):
+    """Создать новый WB личный кабинет"""
+    wb_lk_dict = wb_lk_data.dict()
+    wb_lk_dict['owner_id'] = current_user.id
+    db_wb_lk = WbLk(**wb_lk_dict)
+    db.add(db_wb_lk)
+    db.commit()
+    db.refresh(db_wb_lk)
+    
+    # Привязываем к текущему пользователю
+    current_user.wb_lks.append(db_wb_lk)
+    db.commit()
+    
+    # Возвращаем с информацией о владении
+    return {
+        "id": db_wb_lk.id,
+        "name": db_wb_lk.name,
+        "token": db_wb_lk.token,
+        "number": db_wb_lk.number,
+        "cookie": db_wb_lk.cookie,
+        "authorizev3": db_wb_lk.authorizev3,
+        "inn": db_wb_lk.inn,
+        "tg_id": db_wb_lk.tg_id,
+        "owner_id": db_wb_lk.owner_id,
+        "is_owner": True
+    }
+
+
+@app.post("/wb-lk/{wb_lk_id}/share")
+async def share_wb_lk(
+    wb_lk_id: int,
+    share_data: ShareWbLkRequest,
+    current_user: User = Depends(get_current_user_from_header),
+    db: Session = Depends(get_db)
+):
+    """Поделиться WB личным кабинетом с другим пользователем (только владелец)"""
+    # Проверяем, что WB личный кабинет существует
+    wb_lk = db.query(WbLk).filter(WbLk.id == wb_lk_id).first()
+    if not wb_lk:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="WB личный кабинет не найден"
+        )
+    
+    # Проверяем, что текущий пользователь является владельцем
+    if wb_lk.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Только владелец может предоставлять доступ к личному кабинету"
+        )
+    
+    # Находим пользователя для привязки
+    target_user = db.query(User).filter(User.id == share_data.user_id).first()
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Пользователь не найден"
+        )
+    
+    # Проверяем, что пользователь уже не привязан к этому личному кабинету
+    if wb_lk in target_user.wb_lks:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Пользователь уже имеет доступ к этому личному кабинету"
+        )
+    
+    # Привязываем пользователя к личному кабинету
+    target_user.wb_lks.append(wb_lk)
+    db.commit()
+    
+    return {"message": f"WB личный кабинет '{wb_lk.name}' успешно предоставлен пользователю {target_user.nickname}"}
+
+
+@app.delete("/wb-lk/{wb_lk_id}/unshare/{user_id}")
+async def unshare_wb_lk(
+    wb_lk_id: int,
+    user_id: int,
+    current_user: User = Depends(get_current_user_from_header),
+    db: Session = Depends(get_db)
+):
+    """Отозвать доступ к WB личному кабинету у пользователя (только владелец)"""
+    # Проверяем, что WB личный кабинет существует
+    wb_lk = db.query(WbLk).filter(WbLk.id == wb_lk_id).first()
+    if not wb_lk:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="WB личный кабинет не найден"
+        )
+    
+    # Проверяем, что текущий пользователь является владельцем
+    if wb_lk.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Только владелец может отзывать доступ к личному кабинету"
+        )
+    
+    # Находим пользователя
+    target_user = db.query(User).filter(User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Пользователь не найден"
+        )
+    
+    # Удаляем привязку
+    if wb_lk in target_user.wb_lks:
+        target_user.wb_lks.remove(wb_lk)
+        db.commit()
+        return {"message": f"Доступ к WB личному кабинету '{wb_lk.name}' отозван у пользователя {target_user.nickname}"}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Пользователь не имеет доступа к этому личному кабинету"
+        )
+
+
+@app.get("/wb-lk/{wb_lk_id}/users")
+async def get_wb_lk_users(
+    wb_lk_id: int,
+    current_user: User = Depends(get_current_user_from_header),
+    db: Session = Depends(get_db)
+):
+    """Получить список пользователей, имеющих доступ к WB личному кабинету (только владелец)"""
+    # Проверяем, что WB личный кабинет существует
+    wb_lk = db.query(WbLk).filter(WbLk.id == wb_lk_id).first()
+    if not wb_lk:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="WB личный кабинет не найден"
+        )
+    
+    # Проверяем, что текущий пользователь является владельцем
+    if wb_lk.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Только владелец может просматривать список пользователей"
+        )
+    
+    # Получаем всех пользователей, имеющих доступ к личному кабинету
+    users_with_access = []
+    for user in wb_lk.frontend_users:
+        users_with_access.append({
+            "id": user.id,
+            "nickname": user.nickname,
+            "email": user.email,
+            "is_owner": user.id == wb_lk.owner_id
+        })
+    
+    return {
+        "wb_lk_name": wb_lk.name,
+        "users": users_with_access
+    }
 
 
 @app.get("/analytics/orders-chart", response_model=OrdersChartResponse)

@@ -1,0 +1,450 @@
+.wb-lk-manager {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  color: #00ff41;
+  font-family: 'Courier New', monospace;
+}
+
+.wb-lk-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #00ff41;
+}
+
+.wb-lk-header h2 {
+  margin: 0;
+  font-size: 2rem;
+  text-shadow: 0 0 10px #00ff41;
+}
+
+.user-info {
+  text-align: right;
+}
+
+.user-id, .user-nickname {
+  margin: 5px 0;
+  font-size: 1.1rem;
+}
+
+.user-id strong, .user-nickname strong {
+  color: #ffffff;
+  text-shadow: 0 0 5px #00ff41;
+}
+
+.error-message {
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid #ff0000;
+  color: #ff0000;
+  padding: 15px;
+  margin-bottom: 20px;
+  border-radius: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.error-message button {
+  background: none;
+  border: none;
+  color: #ff0000;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+}
+
+.wb-lk-actions {
+  margin-bottom: 30px;
+}
+
+.add-btn {
+  background: linear-gradient(45deg, #00ff41, #00cc33);
+  border: none;
+  color: #000;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Courier New', monospace;
+}
+
+.add-btn:hover {
+  background: linear-gradient(45deg, #00cc33, #00ff41);
+  box-shadow: 0 0 20px #00ff41;
+  transform: translateY(-2px);
+}
+
+.add-form {
+  background: rgba(0, 255, 65, 0.05);
+  border: 1px solid #00ff41;
+  border-radius: 10px;
+  padding: 25px;
+  margin-bottom: 30px;
+}
+
+.add-form h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #ffffff;
+  text-shadow: 0 0 10px #00ff41;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #00ff41;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #00ff41;
+  border-radius: 5px;
+  color: #00ff41;
+  font-family: 'Courier New', monospace;
+  font-size: 1rem;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #ffffff;
+  box-shadow: 0 0 10px #00ff41;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 25px;
+}
+
+.submit-btn {
+  background: linear-gradient(45deg, #00ff41, #00cc33);
+  border: none;
+  color: #000;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Courier New', monospace;
+}
+
+.submit-btn:hover {
+  background: linear-gradient(45deg, #00cc33, #00ff41);
+  box-shadow: 0 0 20px #00ff41;
+  transform: translateY(-2px);
+}
+
+.cancel-btn {
+  background: transparent;
+  border: 1px solid #ff6600;
+  color: #ff6600;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Courier New', monospace;
+}
+
+.cancel-btn:hover {
+  background: rgba(255, 102, 0, 0.1);
+  box-shadow: 0 0 20px #ff6600;
+}
+
+.wb-lk-list h3 {
+  margin-bottom: 20px;
+  color: #ffffff;
+  text-shadow: 0 0 10px #00ff41;
+}
+
+.no-lks {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-style: italic;
+  border: 2px dashed #333;
+  border-radius: 10px;
+}
+
+.wb-lk-card {
+  background: rgba(0, 255, 65, 0.05);
+  border: 1px solid #00ff41;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+}
+
+.wb-lk-card:hover {
+  background: rgba(0, 255, 65, 0.1);
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+}
+
+.wb-lk-info {
+  margin-bottom: 15px;
+}
+
+.wb-lk-info h4 {
+  margin: 0 0 10px 0;
+  color: #ffffff;
+  text-shadow: 0 0 10px #00ff41;
+  font-size: 1.3rem;
+}
+
+.wb-lk-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.wb-lk-details div {
+  color: #00ff41;
+  font-size: 0.9rem;
+}
+
+.wb-lk-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.share-btn {
+  background: linear-gradient(45deg, #0099ff, #0066cc);
+  border: none;
+  color: #fff;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Courier New', monospace;
+}
+
+.share-btn:hover {
+  background: linear-gradient(45deg, #0066cc, #0099ff);
+  box-shadow: 0 0 15px #0099ff;
+  transform: translateY(-1px);
+}
+
+.share-form {
+  margin-top: 20px;
+  padding: 15px;
+  background: rgba(0, 153, 255, 0.05);
+  border: 1px solid #0099ff;
+  border-radius: 5px;
+}
+
+.share-form h5 {
+  margin: 0 0 15px 0;
+  color: #ffffff;
+  text-shadow: 0 0 10px #0099ff;
+}
+
+.share-input-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.share-input-group input {
+  flex: 1;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #0099ff;
+  border-radius: 5px;
+  color: #0099ff;
+  font-family: 'Courier New', monospace;
+  font-size: 1rem;
+}
+
+.share-input-group input:focus {
+  outline: none;
+  border-color: #ffffff;
+  box-shadow: 0 0 10px #0099ff;
+}
+
+.share-submit-btn {
+  background: linear-gradient(45deg, #0099ff, #0066cc);
+  border: none;
+  color: #fff;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Courier New', monospace;
+  white-space: nowrap;
+}
+
+.share-submit-btn:hover {
+  background: linear-gradient(45deg, #0066cc, #0099ff);
+  box-shadow: 0 0 15px #0099ff;
+  transform: translateY(-1px);
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  font-size: 1.2rem;
+  color: #00ff41;
+  text-shadow: 0 0 10px #00ff41;
+}
+
+@media (max-width: 768px) {
+  .wb-lk-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .user-info {
+    text-align: left;
+  }
+  
+  .share-input-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .wb-lk-details {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ownership-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  margin: 4px 0;
+}
+
+.ownership-badge.owner {
+  background: #ffd700;
+  color: #8b4513;
+}
+
+.ownership-badge.shared {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.manage-btn {
+  background: linear-gradient(45deg, #6c757d, #5a6268);
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  font-family: 'Courier New', monospace;
+  margin-left: 8px;
+}
+
+.manage-btn:hover {
+  background: linear-gradient(45deg, #5a6268, #6c757d);
+  box-shadow: 0 0 15px #6c757d;
+  transform: translateY(-1px);
+}
+
+.manage-users-form {
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(108, 117, 125, 0.05);
+  border-radius: 8px;
+  border: 1px solid #6c757d;
+}
+
+.manage-users-form h5 {
+  margin: 0 0 12px 0;
+  color: #ffffff;
+  text-shadow: 0 0 10px #6c757d;
+}
+
+.users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.user-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  border: 1px solid #6c757d;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-name {
+  font-weight: 500;
+  color: #ffffff;
+  text-shadow: 0 0 5px #6c757d;
+}
+
+.user-email {
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.owner-badge {
+  background: #ffd700;
+  color: #8b4513;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.revoke-btn {
+  background: linear-gradient(45deg, #dc3545, #c82333);
+  border: none;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  font-family: 'Courier New', monospace;
+}
+
+.revoke-btn:hover {
+  background: linear-gradient(45deg, #c82333, #dc3545);
+  box-shadow: 0 0 10px #dc3545;
+  transform: translateY(-1px);
+}

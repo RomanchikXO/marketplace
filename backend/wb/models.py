@@ -11,6 +11,7 @@ class WbLk(models.Model):
     authorizev3 = models.TextField(default='', null=True)
     inn = models.BigIntegerField(default=0, null=True)
     tg_id = models.BigIntegerField(default=0, null=True)
+    owner_id = models.IntegerField(default=1, verbose_name='ID владельца')
 
     def __str__(self):
         return self.name

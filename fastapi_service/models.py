@@ -1,11 +1,20 @@
 # marketplace/fastapi_service/models.py
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, BigInteger, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, BigInteger, Float, ForeignKey, Table
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from passlib.context import CryptContext
 
 Base = declarative_base()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Таблица для связи many-to-many между пользователями и WB личными кабинетами
+user_wb_lk_association = Table(
+    'frontend_users_wb_lk',
+    Base.metadata,
+    Column('user_id', Integer, ForeignKey('frontend_users.id'), primary_key=True),
+    Column('wb_lk_id', Integer, ForeignKey('wb_wblk.id'), primary_key=True)
+)
 
 
 class User(Base):
@@ -17,7 +26,10 @@ class User(Base):
     phone = Column(String(20), nullable=True)
     hashed_password = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), nullable=False, default=func.now())
+
+    # Связь many-to-many с WB личными кабинетами
+    wb_lks = relationship("WbLk", secondary=user_wb_lk_association, back_populates="frontend_users")
 
     def verify_password(self, password: str) -> bool:
         return pwd_context.verify(password, self.hashed_password)
@@ -25,6 +37,23 @@ class User(Base):
     @staticmethod
     def hash_password(password: str) -> str:
         return pwd_context.hash(password)
+
+
+class WbLk(Base):
+    __tablename__ = "wb_wblk"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    token = Column(String(400), nullable=False)
+    number = Column(BigInteger, default=0, nullable=True)
+    cookie = Column(String, default='', nullable=True)
+    authorizev3 = Column(String, default='', nullable=True)
+    inn = Column(BigInteger, default=0, nullable=True)
+    tg_id = Column(BigInteger, default=0, nullable=True)
+    owner_id = Column(Integer, nullable=False)
+
+    # Связь many-to-many с пользователями (включая владельца)
+    frontend_users = relationship("User", secondary=user_wb_lk_association, back_populates="wb_lks")
 
 
 class WbOrders(Base):

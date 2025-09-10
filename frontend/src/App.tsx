@@ -7,7 +7,7 @@ import Dashboard from './components/Dashboard';
 import { useAuth } from './hooks/useAuth';
 
 const App: React.FC = () => {
-  const { user, login, register, logout } = useAuth();
+  const { user, login, register, logout, refreshUserProfile } = useAuth();
 
   return (
     <Router>
@@ -39,7 +39,7 @@ const App: React.FC = () => {
           path="/dashboard/*"
           element={
             user ? (
-              <Dashboard user={user} onLogout={logout} />
+              <Dashboard user={user} onLogout={logout} onUserUpdate={refreshUserProfile} />
             ) : (
               <Navigate to="/login" replace />
             )

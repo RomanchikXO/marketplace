@@ -28,7 +28,6 @@ const ProductsTable: React.FC<ProductsTableProps> = ({ dateFrom, dateTo }) => {
       try {
         setLoading(true);
         const apiUrl = process.env.REACT_APP_API_URL || '/api';
-        
         const params = new URLSearchParams();
         params.append('date_from', dateFrom);
         params.append('date_to', dateTo);

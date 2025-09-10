@@ -1,20 +1,38 @@
 // marketplace/frontend/src/components/Dashboard.tsx
 import React, { useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { Repricer, Analytics, Sorter } from './modules';
+import { Repricer, Analytics, Sorter, WbLkManager } from './modules';
 import './Dashboard.css';
 
+interface WbLk {
+  id: number;
+  name: string;
+  token: string;
+  number?: number;
+  cookie?: string;
+  authorizev3?: string;
+  inn?: number;
+  tg_id?: number;
+  owner_id: number;
+  is_owner: boolean;
+}
+
 interface User {
-  id?: number;
-  nickname?: string;
+  id: number;
+  nickname: string;
   name?: string;
-  email?: string;
+  email: string;
+  phone?: string;
+  is_active: boolean;
+  created_at: string;
+  wb_lks: WbLk[];
   [key: string]: any;
 }
 
 interface DashboardProps {
   user: User;
   onLogout: () => void;
+  onUserUpdate?: (updatedUser: User) => void;
 }
 
 interface ModuleCard {
@@ -26,7 +44,7 @@ interface ModuleCard {
   path: string;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onUserUpdate }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -55,6 +73,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       icon: '📦',
       color: '#ff6600',
       path: '/dashboard/sorter'
+    },
+    {
+      id: 'wb-lk',
+      title: 'WB Личные кабинеты',
+      description: 'Управление WB личными кабинетами',
+      icon: '🏪',
+      color: '#ff00ff',
+      path: '/dashboard/wb-lk'
     }
   ];
 
@@ -204,6 +230,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
           <Route path="/repricer" element={<Repricer />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/sorter" element={<Sorter />} />
+          <Route path="/wb-lk" element={<WbLkManager user={user} onUserUpdate={onUserUpdate} />} />
         </Routes>
       </div>
     </div>
