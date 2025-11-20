@@ -670,6 +670,6 @@ async def get_stat_products():
     ]
     for index, period in enumerate(periods):
         tasks = [get_analitics(cab, period) for cab in cabinets]
-        await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks, return_exceptions=True)
         if index != len(periods) - 1:
             await asyncio.sleep(60)
