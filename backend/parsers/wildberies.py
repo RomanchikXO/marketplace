@@ -1,3 +1,8 @@
+import asyncio
+import uuid
+import zipfile
+import io
+import csv
 import aiohttp
 from datetime import datetime, timedelta
 import json
@@ -303,6 +308,12 @@ async def wb_api(session, param):
                 return None
 
 
+def get_uuid()-> str:
+    generated_uuid = str(uuid.uuid4())
+    return generated_uuid
+
+
+# работает криво изза кривого API от wb
 async def get_orders():
     cabinets = await get_data_from_db("wb_wblk", ["id", "name", "token"])
     for cab in cabinets:
@@ -370,110 +381,295 @@ async def get_nmids():
     cabinets = await get_data_from_db("wb_wblk", ["id", "name", "token"])
 
     for cab in cabinets:
-        try:
-            async with aiohttp.ClientSession() as session:
-                param = {
-                    "type": "get_nmids",
-                    "API_KEY": cab["token"],
-                }
-                while True:
-                    response = await wb_api(session, param)
-                    if not response.get("cards"):
-                        logger.error(f"Ошибка при получении артикулов: {response}")
-                        raise
-                    conn = await async_connect_to_database()
-                    if not conn:
-                        logger.error("Ошибка подключения к БД")
-                        raise
-                    try:
-                        for resp in response["cards"]:
-                            await add_set_data_from_db(
-                                conn=conn,
-                                table_name="wb_nmids",
-                                data=dict(
-                                    lk_id=cab["id"],
-                                    nmid=resp["nmID"],
-                                    imtid=resp["imtID"],
-                                    nmuuid=resp["nmUUID"],
-                                    subjectid=resp["subjectID"],
-                                    subjectname=resp["subjectName"],
-                                    vendorcode=resp["vendorCode"],
-                                    brand=resp["brand"],
-                                    title=resp["title"],
-                                    description=resp["description"],
-                                    needkiz=resp["needKiz"],
-                                    dimensions=json.dumps(resp["dimensions"]),
-                                    characteristics=json.dumps(resp["characteristics"]),
-                                    sizes=json.dumps(resp["sizes"]),
-                                    tag_ids = json.dumps([]),
-                                    created_at=parse_datetime(resp["createdAt"]),
-                                    updated_at=parse_datetime(resp["updatedAt"]),
-                                    added_db=datetime.now() + timedelta(hours=3)
-                                ),
-                                conflict_fields=["nmid", "lk_id"]
-                            )
-                    except Exception as e:
-                        logger.error(f"Ошибка при добавлении артикулов в бд {e}")
-                        raise
-                    finally:
-                        await conn.close()
+        async with aiohttp.ClientSession() as session:
+            param = {
+                "type": "get_nmids",
+                "API_KEY": cab["token"],
+            }
+            while True:
+                response = await wb_api(session, param)
 
-
-                    if response["cursor"]["total"] < 100:
+                if response.get("cursor"):
+                    if response["cursor"]["total"] == 0:
                         break
-                    else:
-                        param["updatedAt"] = response["cursor"]["updatedAt"]
-                        param["nmID"] = response["cursor"]["nmID"]
-        except Exception as e:
-            logger.error(f"Ошибка обновления артикулов для {cab['name']}. Ошибка: {e}")
+
+                if not response.get("cards"):
+                    logger.error(f"Ошибка при получении артикулов для {cab['name']}: {response}")
+                    raise
+                conn = await async_connect_to_database()
+                if not conn:
+                    logger.error("Ошибка подключения к БД")
+                    raise
+                try:
+                    for resp in response["cards"]:
+                        await add_set_data_from_db(
+                            conn=conn,
+                            table_name="wb_nmids",
+                            data=dict(
+                                lk_id=cab["id"],
+                                nmid=resp["nmID"],
+                                imtid=resp["imtID"],
+                                nmuuid=resp["nmUUID"],
+                                subjectid=resp["subjectID"],
+                                subjectname=resp["subjectName"],
+                                vendorcode=resp["vendorCode"],
+                                brand=resp["brand"],
+                                title=resp["title"],
+                                description=resp.get("description", ""),
+                                needkiz=resp["needKiz"],
+                                photos=json.dumps(resp.get("photos", [])),
+                                dimensions=json.dumps(resp["dimensions"]),
+                                characteristics=json.dumps(resp["characteristics"]),
+                                sizes=json.dumps(resp["sizes"]),
+                                tag_ids = json.dumps([]),
+                                created_at=parse_datetime(resp["createdAt"]),
+                                updated_at=parse_datetime(resp["updatedAt"]),
+                                added_db=datetime.now()
+                            ),
+                            conflict_fields=["nmid", "lk_id"]
+                        )
+                except Exception as e:
+                    logger.error(f"Ошибка при добавлении артикулов в бд {e}")
+                    raise
+                finally:
+                    await conn.close()
+
+
+                if response["cursor"]["total"] < 100:
+                    break
+                else:
+                    param["updatedAt"] = response["cursor"]["updatedAt"]
+                    param["nmID"] = response["cursor"]["nmID"]
+                    # await asyncio.sleep(60)
 
 
 async def get_stocks_data_2_weeks():
     cabinets = await get_data_from_db("wb_wblk", ["id", "name", "token"])
 
     for cab in cabinets:
-        try:
-            async with aiohttp.ClientSession() as session:
-                param = {
-                    "type": "get_stocks_data",
-                    "API_KEY": cab["token"],
-                    "dateFrom": str(datetime.now() + timedelta(hours=3) - timedelta(days=1)), #вчерашний день с текущим временем
-                }
-                response = await wb_api(session, param)
+        async with aiohttp.ClientSession() as session:
+            conn = await async_connect_to_database()
+            if not conn:
+                logger.error("Ошибка подключения к БД")
+                raise
 
-                conn = await async_connect_to_database()
-                if not conn:
-                    logger.error("Ошибка подключения к БД")
+            req_is_rows_in_db = """
+                SELECT * from wb_stocks WHERE lk_id = $1 LIMIT 1 
+            """
+            all_fields = await conn.fetch(req_is_rows_in_db, cab["id"])
+
+            if all_fields:
+                days = 1
+            else:
+                logger.info("Пишим остатки в БД впервые")
+                days = 250
+
+            param = {
+                "type": "get_stocks_data",
+                "API_KEY": cab["token"],
+                "dateFrom": str(datetime.now() - timedelta(days=days)),
+            }
+            response = await wb_api(session, param)
+
+            try:
+                for quant in response:
+                    await add_set_data_from_db(
+                        conn=conn,
+                        table_name="wb_stocks",
+                        data=dict(
+                            lk_id=cab["id"],
+                            lastchangedate=parse_datetime(quant["lastChangeDate"]),
+                            warehousename=quant["warehouseName"],
+                            supplierarticle=quant["supplierArticle"],
+                            nmid=quant["nmId"],
+                            barcode=int(quant["barcode"]) if quant.get("barcode") else None,
+                            quantity=quant["quantity"],
+                            inwaytoclient=quant["inWayToClient"],
+                            inwayfromclient=quant["inWayFromClient"],
+                            quantityfull=quant["quantityFull"],
+                            category=quant["category"],
+                            techsize=quant["techSize"],
+                            issupply=quant["isSupply"],
+                            isrealization=quant["isRealization"],
+                            sccode=quant["SCCode"],
+                            added_db=datetime.now()
+
+                        ),
+                        conflict_fields=['nmid', 'lk_id', 'supplierarticle', 'warehousename']
+                    )
+            except Exception as e:
+                logger.error(f"Ошибка при добавлении остатков в БД. Error: {e}")
+            finally:
+                await conn.close()
+
+
+async def get_stat_products():
+    cabinets = await get_data_from_db("wb_wblk", ["id", "name", "token"])
+
+    async def get_analitics(cab: dict, period_get: dict):
+        async with aiohttp.ClientSession() as session:
+            id_report = get_uuid()
+            param = {
+                "type": "seller_analytics_generate",
+                "API_KEY": cab["token"],
+                "reportType": "DETAIL_HISTORY_REPORT",
+                "start": period["start"],
+                "end": period["end"],
+                "id": id_report,  # '685d17f6-ed17-44b4-8a86-b8382b05873c'
+                "userReportName": get_uuid(),
+            }
+            response = await wb_api(session, param)
+
+            if not (response and response.get("data") and response["data"] == "Началось формирование файла/отчета"):
+                logger.error(
+                    f"Ошибка формирования отчета. Период {period_get}. Кабинет: {cab['name']}. Ответ: {response}")
+                raise
+
+            for attempt in range(4):
+                if attempt == 3:
+                    logger.error(
+                        f"‼️Ошибка получения данных в get_stat_products. Кабинет {cab['name']}. ID: {id_report}. Period: {period_get}")
                     raise
-                try:
-                    for quant in response:
-                        await add_set_data_from_db(
-                            conn=conn,
-                            table_name="wb_stocks",
-                            data=dict(
-                                lk_id=cab["id"],
-                                lastchangedate=parse_datetime(quant["lastChangeDate"]),
-                                warehousename=quant["warehouseName"],
-                                supplierarticle=quant["supplierArticle"],
-                                nmid=quant["nmId"],
-                                barcode=int(quant["barcode"]) if quant.get("barcode") else None,
-                                quantity=quant["quantity"],
-                                inwaytoclient=quant["inWayToClient"],
-                                inwayfromclient=quant["inWayFromClient"],
-                                quantityfull=quant["quantityFull"],
-                                category=quant["category"],
-                                techsize=quant["techSize"],
-                                issupply=quant["isSupply"],
-                                isrealization=quant["isRealization"],
-                                sccode=quant["SCCode"],
-                                added_db=datetime.now() + timedelta(hours=3)
+                await asyncio.sleep(10)
+                param = {
+                    "type": "seller_analytics_report",
+                    "API_KEY": cab["token"],
+                    "downloadId": id_report
+                }
 
-                            ),
-                            conflict_fields=['nmid', 'lk_id', 'supplierarticle', 'warehousename', 'techsize']
-                        )
-                except Exception as e:
-                    logger.error(f"Ошибка при добавлении остатков в БД. Error: {e}")
-                finally:
-                    await conn.close()
-        except Exception as e:
-            logger.error(f"Ошибка обновления остатков для {cab['name']}. Ошибка: {e}")
+                response = await wb_api(session, param)
+                if not isinstance(response, bytes):
+                    await asyncio.sleep(55)
+                else:
+                    try:
+                        text = response.decode('utf-8')
+                        if "check correctness of download id or supplier id" in text:
+                            await asyncio.sleep(55)
+                            logger.info(
+                                f"ВНИМАНИЕ!!!: check correctness of download id or supplier id. ПОПЫТКА: {attempt + 1}. Кабинет {cab['name']}. ID: {id_report}. Period: {period_get}")
+                            continue
+                        text = json.loads(text)
+                        if text.get("title"):
+                            await asyncio.sleep(55)
+                            continue
+                    except Exception as e:
+                        break
+            with zipfile.ZipFile(io.BytesIO(response)) as zip_file:
+                for file_name in zip_file.namelist():
+                    with zip_file.open(file_name) as csv_file:
+                        # читаем CSV построчно
+                        reader = csv.reader(io.TextIOWrapper(csv_file, encoding='utf-8'))
+
+                        data = []
+                        header = next(reader)
+
+                        nmid_index = header.index("nmID")
+                        date_wb = header.index("dt")
+                        openCardCount = header.index("openCardCount")
+                        addToCartCount = header.index("addToCartCount")
+                        ordersCount = header.index("ordersCount")
+                        ordersSumRub = header.index("ordersSumRub")
+                        buyoutsCount = header.index("buyoutsCount")
+                        buyoutsSumRub = header.index("buyoutsSumRub")
+                        cancelCount = header.index("cancelCount")
+                        cancelSumRub = header.index("cancelSumRub")
+                        addToCartConversion = header.index("addToCartConversion")
+                        cartToOrderConversion = header.index("cartToOrderConversion")
+                        buyoutPercent = header.index("buyoutPercent")
+
+
+                        for index, row in enumerate(reader):
+                            if index == 0: continue  # пропускаем шапку
+                            data.append(
+                                (
+                                    int(row[nmid_index]),
+                                    parse_datetime(row[date_wb]),
+                                    int(row[openCardCount]),
+                                    int(row[addToCartCount]),
+                                    int(row[ordersCount]),
+                                    int(row[ordersSumRub]),
+                                    int(row[buyoutsCount]),
+                                    int(row[buyoutsSumRub]),
+                                    int(row[cancelCount]),
+                                    int(row[cancelSumRub]),
+                                    int(row[addToCartConversion]),
+                                    int(row[cartToOrderConversion]),
+                                    int(row[buyoutPercent]),
+                                )
+                            )
+
+                        conn = await async_connect_to_database()
+                        if not conn:
+                            logger.error("Ошибка подключения к БД в get_stat_products")
+                            raise
+
+                        try:
+                            BATCH_SIZE = 1000
+                            for batch_start in range(0, len(data), BATCH_SIZE):
+                                batch = data[batch_start:batch_start + BATCH_SIZE]
+                                # Подготовка VALUES и параметров
+                                values_placeholders = []
+                                values_data = []
+
+                                for idx, (
+                                        nmid, date_wb, openCardCount, addToCartCount, ordersCount, ordersSumRub, buyoutsCount,
+                                        buyoutsSumRub, cancelCount, cancelSumRub, addToCartConversion, cartToOrderConversion,
+                                        buyoutPercent) in enumerate(batch):
+                                    base = idx * 13
+                                    values_placeholders.append(
+                                        f"(${base + 1}::integer, ${base + 2}, ${base + 3}::integer, "
+                                        f"${base + 4}::integer, ${base + 5}::integer, ${base + 6}::integer, "
+                                        f"${base + 7}::integer, ${base + 8}::integer, ${base + 9}::integer, "
+                                        f"${base + 10}::integer, ${base + 11}::integer, ${base + 12}::integer, "
+                                        f"${base + 13}::integer)"
+                                    )
+                                    values_data.extend([
+                                        nmid, date_wb, openCardCount, addToCartCount, ordersCount, ordersSumRub,
+                                        buyoutsCount, buyoutsSumRub, cancelCount, cancelSumRub,
+                                        addToCartConversion, cartToOrderConversion, buyoutPercent
+                                    ])
+
+                                query = f"""
+                                    INSERT INTO wb_productsstat (
+                                        nmid, date_wb, "openCardCount", "addToCartCount", "ordersCount", "ordersSumRub",
+                                        "buyoutsCount", "buyoutsSumRub", "cancelCount", "cancelSumRub",
+                                        "addToCartConversion", "cartToOrderConversion", "buyoutPercent"
+                                    )
+                                    VALUES {', '.join(values_placeholders)}
+                                    ON CONFLICT (nmid, date_wb) DO UPDATE SET
+                                        "openCardCount" = EXCLUDED."openCardCount",
+                                        "addToCartCount" = EXCLUDED."addToCartCount",
+                                        "ordersCount" = EXCLUDED."ordersCount",
+                                        "ordersSumRub" = EXCLUDED."ordersSumRub",
+                                        "buyoutsCount" = EXCLUDED."buyoutsCount",
+                                        "buyoutsSumRub" = EXCLUDED."buyoutsSumRub",
+                                        "cancelCount" = EXCLUDED."cancelCount",
+                                        "cancelSumRub" = EXCLUDED."cancelSumRub",
+                                        "addToCartConversion" = EXCLUDED."addToCartConversion",
+                                        "cartToOrderConversion" = EXCLUDED."cartToOrderConversion",
+                                        "buyoutPercent" = EXCLUDED."buyoutPercent";
+                                """
+                                await conn.execute(query, *values_data)
+
+                        except Exception as e:
+                            logger.error(
+                                f"Ошибка обновления данных в myapp_productsstat. Error: {e}"
+                            )
+                            raise
+                        finally:
+                            await conn.close()
+    periods = [
+        {
+            "start": (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d'),
+            "end": datetime.now().strftime('%Y-%m-%d')
+        },
+        {
+            "start": (datetime.now() - timedelta(days=15)).strftime('%Y-%m-%d'),
+            "end": (datetime.now() - timedelta(days=8)).strftime('%Y-%m-%d')
+        }
+    ]
+    for index, period in enumerate(periods):
+        tasks = [get_analitics(cab, period) for cab in cabinets]
+        await asyncio.gather(*tasks)
+        if index != len(periods) - 1:
+            await asyncio.sleep(60)
