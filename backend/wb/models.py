@@ -47,8 +47,9 @@ class nmids(models.Model):
     vendorcode = models.CharField(max_length=255) # Артикул продавца
     brand = models.CharField(max_length=255) # Бренд
     title = models.CharField(max_length=500) # Наименование товара
-    description = models.TextField() # Описание товара
+    description = models.TextField(null=True, blank=True) # Описание товара
     needkiz = models.BooleanField() # Требуется ли код маркировки для этого товара
+    photos = models.JSONField(null=True, blank=True) # фотки без видео
     dimensions = models.JSONField() # Габариты и вес товара c упаковкой, см и кг
     characteristics = models.JSONField() # Характеристики
     sizes = models.JSONField() # Размеры товара
@@ -56,7 +57,7 @@ class nmids(models.Model):
     created_at = models.DateTimeField() # Дата создания карточки товара (по данным WB)
     updated_at = models.DateTimeField() # Дата изменения карточки товара (по данным WB)
     added_db = models.DateTimeField(auto_now_add=True) # по МСК
-    is_active = models.BooleanField(default=True) # поле для понимания нужен товар или нет
+    is_active = models.BooleanField(default=True) # поле для понимания нужен им товар или нет
 
     class Meta:
         unique_together = ['nmid', 'lk']
