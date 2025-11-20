@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import WbLk, nmids, Stocks, Orders
+from .models import WbLk, nmids, Stocks, Orders, ProductsStat
 
 
 @admin.register(WbLk)
@@ -42,3 +42,11 @@ class OrdersAdmin(admin.ModelAdmin):
     list_filter = ('lk', 'iscancel', 'warehousename', 'brand', 'countryname', 'isrealization', 'issupply')
     search_fields = ('supplierarticle', 'nmid', 'barcode', 'gnumber', 'srid')
     ordering = ('-date',)
+
+
+@admin.register(ProductsStat)
+class ProductsStatAdmin(admin.ModelAdmin):
+    list_display = ('nmid', 'date_wb', 'buyoutPercent')
+    search_fields = ('nmid',)
+    ordering = ('-date_wb',)  # Сортировка по умолчанию
+    list_filter = ('date_wb',)

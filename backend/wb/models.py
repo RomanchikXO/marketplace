@@ -17,6 +17,26 @@ class WbLk(models.Model):
         return self.name
 
 
+class ProductsStat(models.Model):
+    nmid = models.IntegerField()
+    date_wb = models.DateTimeField(auto_now_add=True, null=True) #дата от WB
+    openCardCount = models.IntegerField() # Переходы в карточку товара
+    addToCartCount = models.IntegerField() # Положили в корзину, шт.
+    ordersCount = models.IntegerField() # Заказали товаров, шт.
+    ordersSumRub = models.IntegerField() # Заказали на сумму, ₽
+    buyoutsCount = models.IntegerField() # Выкупили товаров, шт.
+    buyoutsSumRub = models.IntegerField() # Выкупили на сумму, ₽
+    cancelCount = models.IntegerField() # Отменили товаров, шт.
+    cancelSumRub = models.IntegerField() # Отменили на сумму, ₽
+    addToCartConversion = models.IntegerField() # Конверсия в корзину, %
+    cartToOrderConversion = models.IntegerField() # Конверсия в заказ, %
+    buyoutPercent = models.IntegerField() # Процент выкупа, %
+
+    class Meta:
+        unique_together = ['nmid', 'date_wb']  # Уникальное ограничение на комбинацию nmid и date_wb
+        verbose_name_plural = "Статистика товаров"
+
+
 class nmids(models.Model):
     lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1) #lk_id в бд
     nmid = models.IntegerField() # Артикул WB
